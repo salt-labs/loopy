@@ -94,6 +94,7 @@ jobs:
           Pop-Location
           # Install Visual Studio Build Tools to use instead of LLVM
           choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+          tree /F
 
       - id: checkout_repository
         name: Checkout repository
@@ -220,6 +221,7 @@ jobs:
           Pop-Location
           # Install Visual Studio Build Tools to use instead of LLVM
           choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+          tree /F
 
       - id: checkout_repository
         name: Checkout repository
@@ -266,9 +268,9 @@ jobs:
           $env:VCPKGRS_DYNAMIC = "1"
           $env:VCPKG_ROOT = "$(Get-Location)\vcpkg"
           # LLVM
-          $env:RUSTFLAGS = "-Clinker=$env:VCPKG_ROOT\installed\x64-windows-static\tools\llvm\bin\lld-link.exe -Ctarget-feature=+crt-static"
+          #$env:RUSTFLAGS = "-Clinker=$env:VCPKG_ROOT\installed\x64-windows-static\tools\llvm\bin\lld-link.exe -Ctarget-feature=+crt-static"
           # MSVC
-          #$env:RUSTFLAGS = "-Ctarget-feature=+
+          $env:RUSTFLAGS = "-Ctarget-feature=+
           $env:LIB = "$env:VCPKG_ROOT\installed\x64-windows-static\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_ROOT\installed\x64-windows-static\include;$env:INCLUDE"
           cargo test --verbose

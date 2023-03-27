@@ -20,3 +20,6 @@ result
 
 # Ignore vendor
 vendor/
+
+# Ignore WIP
+TODO/

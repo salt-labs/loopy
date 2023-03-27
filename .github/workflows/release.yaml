@@ -95,39 +95,6 @@ jobs:
           semver_suffix: ""
           timezone: "Australia/Sydney"
 
-      - id: bump_cargo_release_dry
-        name: Bump Cargo release (Dry Run)
-        if: github.event_name == 'pull_request'
-        # && !contains( github.event.head_commit.author.name, 'GITHUBACTION' )
-        run: |
-          git config --local user.name "${GITHUB_ACTOR}"
-          git config --local user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          cargo install --verbose cargo-bump
-          cargo bump ${{ steps.prep_release.outputs.semver }}
-          cargo update --verbose --package ${{ env.PROJECT }}
-          git status
-          grep "version" Cargo.toml
-          git add Cargo.toml Cargo.lock
-          git commit --no-verify --all --message "Bump Cargo version to ${{ steps.prep_release.outputs.semver }}" \
-          || echo "No changes to commit"
-
-      - id: bump_cargo_release
-        name: Bump Cargo release
-        if: github.event_name == 'push' && contains( github.ref, 'trunk' )
-        # && !contains( github.event.head_commit.author.name, 'GITHUBACTION' )
-        run: |
-          git config --local user.name "${GITHUB_ACTOR}"
-          git config --local user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          cargo install --verbose cargo-bump
-          cargo bump ${{ steps.prep_release.outputs.semver }}
-          cargo update --verbose --package ${{ env.PROJECT }}
-          git status
-          grep "version" Cargo.toml
-          git add Cargo.toml Cargo.lock
-          git commit --no-verify --all --message "Bump Cargo version to ${{ steps.prep_release.outputs.semver }}" \
-          || echo "No changes to commit"
-          git push --force origin trunk
-
       - id: cargo_version
         name: Read Cargo.toml version
         run: |
@@ -141,8 +108,9 @@ jobs:
           git fetch --tags
           if [[ $(git show-ref --tags --verify -- "refs/tags/${{ env.TAG_VERSION }}") ]]
           then
-            echo "The tag ${{ env.TAG_VERSION }} already exists."
+            echo "The tag ${{ env.TAG_VERSION }} already exists, did you forget to bump the version?"
             echo "CREATE_TAG=false" >> "${GITHUB_OUTPUT}"
+            exit 1
           else
             echo "The tag ${{ env.TAG_VERSION }} does not yet exist."
             echo "CREATE_TAG=true" >> "${GITHUB_OUTPUT}"
@@ -156,8 +124,9 @@ jobs:
           git fetch --tags
           if [[ $(git show-ref --tags --verify -- "refs/tags/${{ env.TAG_VERSION }}") ]]
           then
-            echo "The tag ${{ env.TAG_VERSION }} already exists."
+            echo "The tag ${{ env.TAG_VERSION }} already exists, did you forget to bump the version?"
             echo "CREATE_TAG=false" >> "${GITHUB_OUTPUT}"
+            exit 1
           else
             echo "The tag ${{ env.TAG_VERSION }} does not yet exist."
             echo "CREATE_TAG=true" >> "${GITHUB_OUTPUT}"
@@ -251,9 +220,9 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             toolchain: stable
-          #- target: aarch64-unknown-linux-gnu
-          #  os: ubuntu-latest
-          #  toolchain: stable
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            toolchain: stable
         #exclude:
 
     steps:
@@ -392,9 +361,9 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             toolchain: stable
-          #- target: aarch64-unknown-linux-gnu
-          #  os: ubuntu-latest
-          #  toolchain: stable
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            toolchain: stable
         #exclude:
 
     steps:
@@ -471,39 +440,6 @@ jobs:
           submodules: false
           clean: true
           persist-credentials: true
-
-      - id: bump_cargo_release_dry
-        name: Bump Cargo release (Dry Run)
-        if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
-        # && !contains( github.event.head_commit.author.name, 'GITHUBACTION' )
-        run: |
-          git config --local user.name "${GITHUB_ACTOR}"
-          git config --local user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          cargo install --verbose cargo-bump
-          cargo bump ${{ needs.create_release.outputs.semver }}
-          cargo update --verbose --package ${{ needs.create_release.outputs.repo_name }}
-          git status
-          grep "version" Cargo.toml
-          git add Cargo.toml Cargo.lock
-          git commit --no-verify --all --message "Bump Cargo version to ${{ needs.create_release.outputs.semver }}" \
-          || echo "No changes to commit"
-
-      - id: bump_cargo_release
-        name: Bump Cargo release
-        if: github.event_name == 'push' && contains( github.ref, 'trunk' )
-        # && !contains( github.event.head_commit.author.name, 'GITHUBACTION' )
-        run: |
-          git config --local user.name "${GITHUB_ACTOR}"
-          git config --local user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          cargo install --verbose cargo-bump
-          cargo bump ${{ needs.create_release.outputs.semver }}
-          cargo update --verbose --package ${{ needs.create_release.outputs.repo_name }}
-          git status
-          grep "version" Cargo.toml
-          git add Cargo.toml Cargo.lock
-          git commit --no-verify --all --message "Bump Cargo version to ${{ needs.create_release.outputs.semver }}" \
-          || echo "No changes to commit"
-          git push --force origin trunk
 
       - id: upload_release_artifact_crates_io_dry
         name: Upload Rust application to crates.io (Dry Run)

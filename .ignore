@@ -1,0 +1,5 @@
+
+# Typos ignore folders.
+
+# Ignore all of .git
+.git/

@@ -1,0 +1,4 @@
+[submodule ".linters"]
+	path = .linters
+	url = git@github.com:salt-labs/linters.git
+	ref = trunk

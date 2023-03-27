@@ -79,11 +79,19 @@ jobs:
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        shell: powershell
         run: |
           git clone https://github.com/microsoft/vcpkg.git
-          cd vcpkg
-          ".\bootstrap-vcpkg.bat"
-          ".\vcpkg\vcpkg.exe" install libmagic
+          Push-Location -Path "vcpkg"
+          `.\bootstrap-vcpkg.bat`
+          `.\vcpkg.exe` install curl
+          `.\vcpkg.exe` install libmagic
+          `.\vcpkg.exe` install libpq
+          `.\vcpkg.exe` install libuv
+          `.\vcpkg.exe` install openssl
+          `.\vcpkg.exe` install sqlite3
+          `.\vcpkg.exe` install zlib
+          Pop-Location
 
       - id: checkout_repository
         name: Checkout repository
@@ -195,11 +203,19 @@ jobs:
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        shell: powershell
         run: |
           git clone https://github.com/microsoft/vcpkg.git
-          cd vcpkg
-          ".\bootstrap-vcpkg.bat"
-          ".\vcpkg.exe" install libmagic
+          Push-Location -Path "vcpkg"
+          `.\bootstrap-vcpkg.bat`
+          `.\vcpkg.exe` install curl
+          `.\vcpkg.exe` install libmagic
+          `.\vcpkg.exe` install libpq
+          `.\vcpkg.exe` install libuv
+          `.\vcpkg.exe` install openssl
+          `.\vcpkg.exe` install sqlite3
+          `.\vcpkg.exe` install zlib
+          Pop-Location
 
       - id: checkout_repository
         name: Checkout repository

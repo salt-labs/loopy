@@ -41,7 +41,7 @@ jobs:
     timeout-minutes: 60
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
@@ -56,9 +56,9 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             toolchain: stable
-          #- target: aarch64-unknown-linux-gnu
-          #  os: ubuntu-latest
-          #  toolchain: stable
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            toolchain: stable
         #exclude:
 
     steps:
@@ -145,7 +145,7 @@ jobs:
     timeout-minutes: 60
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
@@ -160,9 +160,9 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             toolchain: stable
-          #- target: aarch64-unknown-linux-gnu
-          #  os: ubuntu-latest
-          #  toolchain: stable
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            toolchain: stable
         #exclude:
 
     steps:

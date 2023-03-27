@@ -136,6 +136,11 @@ in
           };
 
           settings = {
+            clippy = {
+              denyWarnings = true;
+              offline = false;
+            };
+
             deadnix = {
               edit = false;
               noUnderscore = true;

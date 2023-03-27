@@ -81,8 +81,9 @@ jobs:
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
         run: |
           git clone https://github.com/microsoft/vcpkg.git
-          ".\vcpkg\bootstrap-vcpkg.bat"
-          ".\vcpkg\vcpkg.exe install libmagic:x64-windows-static"
+          cd vcpkg
+          ".\bootstrap-vcpkg.bat"
+          ".\vcpkg\vcpkg.exe" install libmagic
 
       - id: checkout_repository
         name: Checkout repository

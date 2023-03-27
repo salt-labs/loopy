@@ -1,0 +1,420 @@
+global:
+  imageRegistry:
+  imagePullSecrets: []
+  storageClass: ""
+
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
+kubeVersion: ""
+extraDeploy: []
+commonLabels: {}
+commonAnnotations: {}
+diagnosticMode:
+  enabled: false
+  command:
+    - sleep
+  args:
+    - infinity
+
+existingConfigMap: ""
+
+## Refer to https://projectcontour.io/docs/latest/configuration for available options.
+configInline:
+  disablePermitInsecure: false
+  tls:
+    fallback-certificate: {}
+  accesslog-format: envoy
+
+contour:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnami/contour
+    tag: 1.24.2-debian-11-r1
+    digest: ""
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    debug: true
+  replicaCount: 1
+  priorityClassName: ""
+  schedulerName: ""
+  terminationGracePeriodSeconds: ""
+  topologySpreadConstraints: []
+  containerPorts:
+    xds: 8001
+    metrics: 8000
+  hostAliases: []
+  updateStrategy: {}
+  extraArgs: []
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  manageCRDs: true
+  envoyServiceNamespace: ""
+  envoyServiceName: ""
+  ingressStatusAddress: ""
+  podAffinityPreset: ""
+  podAntiAffinityPreset: soft
+  podLabels: {}
+  lifecycleHooks: {}
+  customLivenessProbe: {}
+  customReadinessProbe: {}
+  customStartupProbe: {}
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  command: []
+  args: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podAnnotations: {}
+  serviceAccount:
+    create: true
+    name: ""
+    automountServiceAccountToken: true
+    annotations: {}
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 120
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  certgen:
+    serviceAccount:
+      create: true
+      name: ""
+      automountServiceAccountToken: true
+      annotations: {}
+    certificateLifetime: 365
+  tlsExistingSecret: ""
+  service:
+    type: ClusterIP
+    ports:
+      xds: 8001
+      metrics: 8000
+    ## NOTE: choose port between <30000-32767>
+    nodePorts:
+      xds: ""
+    clusterIP: ""
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: []
+    loadBalancerClass: ""
+    externalTrafficPolicy: Cluster
+    annotations: {}
+    extraPorts: []
+    sessionAffinity: None
+    sessionAffinityConfig: {}
+  initContainers: []
+  sidecars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  ingressClass:
+    name: contour
+    create: true
+    default: true
+  debug: true
+  logFormat: text # text or json
+  kubernetesDebug: 0
+  rootNamespaces: ""
+  overloadManager:
+    enabled: false
+    maxHeapBytes: "2147483648"
+
+envoy:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnami/envoy
+    tag: 1.24.3-debian-11-r4
+    digest: ""
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  priorityClassName: ""
+  schedulerName: ""
+  topologySpreadConstraints: []
+  extraArgs: []
+  hostAliases: []
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  command: []
+  args: []
+  shutdownManager:
+    enabled: true
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+  kind: daemonset
+  replicaCount: 1
+  lifecycleHooks: {}
+  updateStrategy:
+    type: RollingUpdate
+  minReadySeconds: 0
+  revisionHistoryLimit: 10
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 11
+    targetCPU: ""
+    targetMemory: ""
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podAnnotations: {}
+  podLabels: {}
+  podSecurityContext:
+    fsGroup: 0
+    sysctls: []
+    enabled: false
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+  hostNetwork: false
+  dnsPolicy: ClusterFirst
+  tlsExistingSecret: ""
+  serviceAccount:
+    create: true
+    name: ""
+    automountServiceAccountToken: false
+    annotations: {}
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 120
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 3
+    timeoutSeconds: 1
+    failureThreshold: 3
+    successThreshold: 1
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  customLivenessProbe: {}
+  customReadinessProbe: {}
+  customStartupProbe: {}
+  terminationGracePeriodSeconds: 300
+  logLevel: info
+  service:
+    name: ""
+    targetPorts:
+      http: http
+      https: https
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+    labels: {}
+    clusterIP: ""
+    externalIPs: []
+    loadBalancerIP: ""
+    loadBalancerSourceRanges: []
+    loadBalancerClass: ""
+    ipFamilyPolicy: ""
+    annotations: {}
+    ports:
+      http: 80
+      https: 443
+    nodePorts:
+      http: ""
+      https: ""
+    extraPorts: []
+    sessionAffinity: None
+    sessionAffinityConfig: {}
+  useHostPort: true
+  useHostIP: false
+  hostPorts:
+    http: 80
+    https: 443
+  hostIPs:
+    http: 127.0.0.1
+    https: 127.0.0.1
+  containerPorts:
+    http: 8080
+    https: 8443
+  initContainers: []
+  sidecars: []
+  extraVolumes: []
+  extraVolumeMounts: []
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+
+defaultBackend:
+  enabled: false
+  image:
+    registry: docker.io
+    repository: bitnami/nginx
+    #tag: 1.23.3
+    tag: latest
+    digest: ""
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  extraArgs: {}
+  lifecycleHooks: {}
+  extraEnvVars: []
+  extraEnvVarsCM: ""
+  extraEnvVarsSecret: ""
+  extraVolumes: []
+  extraVolumeMounts: []
+  initContainers: []
+  sidecars: []
+  containerPorts:
+    http: 8001
+  updateStrategy: {}
+  command: []
+  args: []
+  hostAliases: []
+  replicaCount: 1
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 1024Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  livenessProbe:
+    enabled: true
+    failureThreshold: 3
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  readinessProbe:
+    enabled: true
+    failureThreshold: 6
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    successThreshold: 1
+    timeoutSeconds: 5
+  startupProbe:
+    enabled: false
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1
+  customLivenessProbe: {}
+  customReadinessProbe: {}
+  customStartupProbe: {}
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+  schedulerName: ""
+  terminationGracePeriodSeconds: 60
+  topologySpreadConstraints: []
+  podAffinityPreset: ""
+  podAntiAffinityPreset: soft
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  service:
+    type: ClusterIP
+    ports:
+      http: 80
+    annotations: {}
+  pdb:
+    create: false
+    minAvailable: 1
+    maxUnavailable: ""
+
+ingress:
+  enabled: false
+  apiVersion: ""
+  certManager: false
+  annotations: {}
+  hostname: contour.local
+  path: /
+  rulesOverride: []
+  selfSigned: true
+  ingressClassName: ""
+  extraPaths: []
+  tls: false
+  pathType: ImplementationSpecific
+  extraHosts: []
+  extraTls: []
+  secrets: []
+  extraRules: []
+
+metrics:
+  serviceMonitor:
+    namespace: prometheus
+    enabled: false
+    jobLabel: "app.kubernetes.io/name"
+    interval: ""
+    metricRelabelings: []
+    relabelings: []
+    honorLabels: false
+    scrapeTimeout: ""
+    selector: {}
+    labels: {}
+
+rbac:
+  create: true
+  rules: []
+
+tlsExistingSecret: ""

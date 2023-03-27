@@ -1,0 +1,240 @@
+---
+##################################################
+# Name: rust.yml
+# Description: Workflow for Rust projects
+##################################################
+
+name: Rust
+
+on:
+  pull_request:
+    branches:
+      - trunk
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - review_requested
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+
+env:
+  CARGO_TERM_COLOR: always
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  #########################
+  # Test the package for linting
+  # and ensure formatted correctly
+  #########################
+
+  cargo_check:
+    name: Cargo Check
+
+    runs-on: ${{ matrix.os }}
+
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            toolchain: stable
+          #- target: x86_64-pc-windows-msvc
+          #  os: windows-latest
+          #  toolchain: stable
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            toolchain: stable
+
+    steps:
+      - id: setup_rust
+        name: Setup the Rust environment
+        uses: actions-rs/toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+          toolchain: ${{ matrix.toolchain }}
+          default: true
+
+      - id: checkout_repository
+        name: Checkout repository
+        uses: actions/checkout@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          persist-credentials: true
+
+      - id: cache_artifacts_cargo_registry
+        name: Cache Cargo registry
+        uses: actions/cache@v2
+        with:
+          path: ~/.cargo/registry
+          key: ${{ matrix.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.target }}-cargo-registry-
+
+      - id: cache_artifacts_cargo_index
+        name: Cache Cargo index
+        uses: actions/cache@v2
+        with:
+          path: ~/.cargo/git
+          key: ${{ matrix.target }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.target }}-cargo-index-
+
+      - id: cache_artifacts_cargo_target
+        name: Cache Cargo build
+        uses: actions/cache@v2
+        with:
+          path: target/release
+          key: ${{ matrix.target }}-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.target }}-target-
+
+      - id: cache_artifacts_vcpkg
+        name: Cache vcpkg
+        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        uses: actions/cache@v2
+        with:
+          path: vcpkg
+          key: ${{ matrix.target }}-vcpkg-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.target }}-vcpkg-
+
+      - id: setup_rust_arm64
+        name: Setup the Rust environment for ARM64
+        if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt install gcc-multilib
+
+      - id: setup_rust_macos
+        name: Setup the Rust environment for MacOS
+        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
+        run: |
+          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar zlib zstd
+
+      - id: setup_rust_windows
+        name: Setup the Rust environment for Windows
+        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        shell: powershell
+        env:
+          VCPKG_INSTALLED: ${{ github.workspace }}/vcpkg/installed/
+          #VCPKG_DEFAULT_TRIPLET: "x64-windows-static" # (libcmt.lib)
+          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md" # (msvcrt.lib)
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          Push-Location -Path "vcpkg"
+          Start-Process ".\bootstrap-vcpkg.bat"
+          vcpkg.exe install curl:${env:VCPKG_DEFAULT_TRIPLET} libmagic:${env:VCPKG_DEFAULT_TRIPLET} openssl:${env:VCPKG_DEFAULT_TRIPLET} zlib:${env:VCPKG_DEFAULT_TRIPLET}
+          vcpkg.exe integrate install
+          Pop-Location
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+          tree /F ${env:VCPKG_INSTALLED}
+
+      - id: cargo_check
+        name: Run Cargo check
+        if: matrix.target != 'x86_64-pc-windows-msvc'
+        run: |
+          cargo --version
+          cargo check --verbose
+
+      - id: cargo_check_windows
+        name: Run Cargo check (Windows)
+        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        shell: powershell
+        env:
+          VCPKGRS_DYNAMIC: "1"
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
+          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
+        run: |
+          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
+          $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
+          $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
+          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
+          $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
+          $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
+          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
+          cargo --version
+          cargo check --verbose
+
+      - id: cargo_fmt
+        name: Run Cargo format
+        run: |
+          rustup component add rustfmt
+          rustup component list --toolchain ${{ matrix.toolchain }}
+          cargo fmt --version
+          cargo fmt --all -- --check
+
+      - id: cargo_clippy
+        name: Run Cargo clippy
+        run: |
+          rustup component add clippy
+          rustup component list --toolchain ${{ matrix.toolchain }}
+          cargo clippy --version
+          cargo clippy --all --all-features -- -D warnings
+
+      - id: cargo_build
+        name: Run Cargo build
+        if: matrix.target != 'x86_64-pc-windows-msvc'
+        run: |
+          cargo --version
+          cargo build --verbose
+
+      - id: cargo_build_windows
+        name: Run Cargo build (Windows)
+        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        shell: powershell
+        env:
+          VCPKGRS_DYNAMIC: "1"
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
+          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
+        run: |
+          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
+          $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
+          $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
+          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
+          $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
+          $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
+          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
+          cargo build --verbose
+
+      - id: cargo_test
+        name: Run Cargo tests
+        if: matrix.target != 'x86_64-pc-windows-msvc'
+        run: |
+          cargo --version
+          cargo test --verbose
+
+      - id: cargo_test_windows
+        name: Run Cargo tests (Windows)
+        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        shell: powershell
+        env:
+          VCPKGRS_DYNAMIC: "1"
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
+          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
+          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
+        run: |
+          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
+          $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
+          $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
+          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
+          $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
+          $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
+          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
+          cargo test --verbose

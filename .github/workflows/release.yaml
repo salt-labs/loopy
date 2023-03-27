@@ -1,0 +1,454 @@
+---
+##################################################
+# Name: release.yaml
+# Description: Workflow to create and publish to a GitHub release
+##################################################
+
+name: Release
+
+on:
+  # Treating approved PRs into trunk as "pre-releases"
+  pull_request_review:
+    types:
+      - submitted
+
+  # Treating merged PRs into trunk as "releases"
+  push:
+    branches:
+      - "trunk"
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+
+permissions:
+  packages: write
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+  REGISTRY: ghcr.io
+
+  REGISTRY_USERNAME: ${{ github.actor }}
+  REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+
+  ORGANISATION: ${{ github.repository_owner }}
+  PROJECT: ${{ github.event.repository.name }}
+
+  # Works on pushes or PRs
+  BRANCH_NAME_CURRENT: ${{ github.head_ref || github.ref_name }}
+  BRANCH_NAME_DEFAULT: ${{ github.event.repository.default_branch }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  #########################
+  # Create a GitHub Release
+  #########################
+
+  create_release:
+    name: Create a GitHub Release
+
+    runs-on: ${{ matrix.os }}
+
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+
+    steps:
+      - id: checkout_repository
+        name: Checkout repository with all history and tags
+        uses: actions/checkout@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB_REPOS }}
+        with:
+          fetch-depth: 0
+          submodules: false
+          clean: true
+          persist-credentials: true
+
+      # NOTE: Cargo version needs to be SemVer compatible
+      # ${MAJOR}.${MINOR}.${PATCH}-${PRE-RELEASE}+${BUILD}
+      - id: prep_release
+        name: Prepare for Release
+        uses: salt-labs/action-its-shipping-time@trunk
+        with:
+          loglevel: "INFO"
+          tag_enable: "TRUE"
+          tag_force: "FALSE"
+          changelog_enable: "TRUE"
+          git_pretty_format: "* %h %G? %aN - %s"
+          calver_enable: "FALSE"
+          calver_scheme: "YYYY.MM.GEN"
+          calver_split: "."
+          calver_split_mod: "."
+          semver_enabled: "TRUE"
+          # TODO: Add reading type from PR labels for what to bump.
+          #semver_type: "${{ steps.read_labels.outputs.labels.semver_type | default 'patch' }}"
+          semver_prefix: ""
+          semver_suffix: ""
+          timezone: "Australia/Sydney"
+
+      - id: cargo_version
+        name: Read Cargo.toml version
+        run: |
+          echo VERSION="$(grep -E "^version = " Cargo.toml | awk '{print $3}' | tr -d '"')" >> "${GITHUB_OUTPUT}"
+
+      - id: check_tags_prerelease
+        name: Check git tags (Pre-release)
+        env:
+          TAG_VERSION: "${{ steps.cargo_version.outputs.VERSION }}-rc"
+        run: |
+          git fetch --tags
+          if [[ $(git show-ref --tags --verify -- "refs/tags/${{ env.TAG_VERSION }}") ]]
+          then
+            echo "The tag ${{ env.TAG_VERSION }} already exists, did you forget to bump the version?"
+            echo "CREATE_TAG=false" >> "${GITHUB_OUTPUT}"
+            exit 1
+          else
+            echo "The tag ${{ env.TAG_VERSION }} does not yet exist."
+            echo "CREATE_TAG=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - id: check_tags_release
+        name: Check git tags (Release)
+        env:
+          TAG_VERSION: "${{ steps.cargo_version.outputs.VERSION }}"
+        run: |
+          git fetch --tags
+          if [[ $(git show-ref --tags --verify -- "refs/tags/${{ env.TAG_VERSION }}") ]]
+          then
+            echo "The tag ${{ env.TAG_VERSION }} already exists, did you forget to bump the version?"
+            echo "CREATE_TAG=false" >> "${GITHUB_OUTPUT}"
+            exit 1
+          else
+            echo "The tag ${{ env.TAG_VERSION }} does not yet exist."
+            echo "CREATE_TAG=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - id: create_release_prerelease
+        name: Create Pre-Release
+        if: ${{ github.event.review.state == 'approved' && steps.check_tags_prerelease.outputs.CREATE_TAG == 'true' }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.cargo_version.outputs.VERSION }}-rc
+          release_name: ${{ steps.cargo_version.outputs.VERSION }}-rc
+          body: |
+            # ${{ steps.prep_release.outputs.repo_name }} changelog
+
+            ${{ steps.prep_release.outputs.changelog }}
+
+            # Install
+
+            ```bash
+            cargo install ${{ env.PROJECT }} --version ${{ steps.cargo_version.outputs.VERSION }}
+            ```
+          draft: false
+          prerelease: true
+
+      - id: create_release
+        if: ${{ github.event_name == 'push' && contains( github.ref, 'trunk' ) && steps.check_tags_release.outputs.CREATE_TAG == 'true' }}
+        name: Create Release Draft
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.cargo_version.outputs.VERSION }}
+          release_name: ${{ steps.cargo_version.outputs.VERSION }}
+          body: |
+            # ${{ steps.prep_release.outputs.repo_name }} changelog
+
+            ${{ steps.prep_release.outputs.changelog }}
+
+            # Install
+
+            ```bash
+            cargo install ${{ env.PROJECT }} --version ${{ steps.cargo_version.outputs.VERSION }}
+            ```
+          draft: true
+          prerelease: false
+
+    outputs:
+      # Prep-Release
+      calver: ${{ steps.prep_release.outputs.calver }}
+      semver: ${{ steps.prep_release.outputs.semver }}
+      changelog: ${{ steps.prep_release.outputs.changelog }}
+      repo_owner: ${{ steps.prep_release.outputs.repo_owner }}
+      repo_name: ${{ steps.prep_release.outputs.repo_name }}
+
+      # Pre-Release
+      upload_url_prerelease: ${{ steps.create_release_prerelease.outputs.upload_url }}
+
+      # Release
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
+  #########################
+  # Build the Rust app
+  #########################
+
+  build_rust:
+    name: Build Rust app
+
+    needs:
+      - create_release
+
+    runs-on: ${{ matrix.os }}
+
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            toolchain: stable
+          #- target: x86_64-pc-windows-msvc
+          #  os: windows-latest
+          #  toolchain: stable
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            toolchain: stable
+
+    steps:
+      - id: setup_rust
+        name: Setup the Rust environment
+        uses: actions-rs/toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+          toolchain: ${{ matrix.toolchain }}
+          default: true
+
+      - id: setup_rust_arm64
+        name: Setup the Rust environment for ARM64
+        if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt install gcc-multilib
+
+      - id: checkout_repository
+        name: Checkout repository
+        uses: actions/checkout@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          persist-credentials: true
+
+      - id: cache_artifacts_cargo_registry
+        name: Cache Cargo registry
+        uses: actions/cache@v2
+        with:
+          path: ~/.cargo/registry
+          key: ${{ matrix.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.target }}-cargo-registry-
+
+      - id: cache_artifacts_cargo_index
+        name: Cache Cargo index
+        uses: actions/cache@v2
+        with:
+          path: ~/.cargo/git
+          key: ${{ matrix.target }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.target }}-cargo-index-
+
+      - id: cache_artifacts_cargo_target
+        name: Cache Cargo build
+        uses: actions/cache@v2
+        with:
+          path: target/release
+          key: ${{ matrix.target }}-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.target }}-target-
+
+      - id: cargo_check
+        name: Run Cargo check
+        run: |
+          cargo --version
+          cargo check --verbose
+
+      - id: cargo_fmt
+        name: Run Cargo format
+        run: |
+          rustup component add rustfmt
+          rustup component list --toolchain ${{ matrix.toolchain }}
+          cargo fmt --version
+          cargo fmt --all -- --check
+
+      - id: cargo_clippy
+        name: Run Cargo clippy
+        run: |
+          rustup component add clippy
+          rustup component list --toolchain ${{ matrix.toolchain }}
+          cargo clippy --version
+          cargo clippy --all --all-features -- -D warnings
+
+      - id: cargo_test
+        name: Run Cargo tests
+        run: |
+          cargo --version
+          cargo test --verbose
+
+      - id: cargo_build
+        name: Run Cargo build
+        run: |
+          rustup target add ${{ matrix.target }}
+          rustup target list --toolchain ${{ matrix.toolchain }}
+          cargo --version
+          cargo build --verbose --release --target=${{ matrix.target }}
+
+      - id: archive_rust
+        name: Archive Rust artifacts (cross-platform)
+        shell: pwsh
+        working-directory: "${{ github.workspace }}"
+        run: >
+          ./.github/scripts/archive.ps1
+          -Target ${{ matrix.target }}
+          -LogLevel debug
+          -DieHard
+
+      - id: upload_artifacts
+        name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
+          path: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
+
+  #########################
+  # Publish the the Rust app (GitHub Release)
+  #########################
+
+  release_publish_github:
+    name: Publish Release to GitHub
+
+    needs:
+      - create_release
+      - build_rust
+
+    runs-on: ${{ matrix.os }}
+
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            toolchain: stable
+          #- target: x86_64-pc-windows-msvc
+          #  os: windows-latest
+          #  toolchain: stable
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            toolchain: stable
+
+    steps:
+      - id: fetch_artifact
+        name: Fetch the Build artifact to upload
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
+
+      - id: show_artifacts
+        name: Show downloaded Artifacts
+        run: ls -R
+
+      - id: upload_release_artifact_github_prerelease
+        if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+        name: Upload Artifact to Pre-Release
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url_prerelease }}
+          asset_path: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
+          asset_name: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
+          asset_content_type: application/zip
+
+      - id: upload_release_artifact_github
+        if: github.event_name == 'push' && contains( github.ref, 'trunk' )
+        name: Upload Artifact to Release
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
+          asset_name: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
+          asset_content_type: application/zip
+
+  #########################
+  # Publish the the Rust app (crates.io)
+  #########################
+
+  release_publish_crates_io:
+    name: Publish Release to crates.io
+
+    needs:
+      - create_release
+      - build_rust
+
+    runs-on: ${{ matrix.os }}
+
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+
+    steps:
+      - id: setup_rust
+        name: Setup the Rust environment
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          default: true
+
+      - id: checkout_repository
+        name: Checkout repository
+        uses: actions/checkout@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB_REPOS }}
+        with:
+          fetch-depth: 0
+          submodules: false
+          clean: true
+          persist-credentials: true
+
+      - id: upload_release_artifact_crates_io_dry
+        name: Upload Rust application to crates.io (Dry Run)
+        run: >
+          cargo publish
+          --token ${{ secrets.PAT_CRATES_IO }}
+          --dry-run
+
+      - id: upload_release_artifact_crates_io
+        name: Upload Rust application to crates.io
+        if: github.event_name == 'push' && contains( github.ref, 'trunk' )
+        run: >
+          cargo publish
+          --token ${{ secrets.PAT_CRATES_IO }}

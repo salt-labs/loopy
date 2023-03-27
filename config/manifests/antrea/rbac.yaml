@@ -1,0 +1,64 @@
+# NOTE: For development purposes only...
+---
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: antrea-system-privileged
+spec:
+  privileged: true
+  allowPrivilegeEscalation: true
+  allowedCapabilities:
+    - "*"
+  fsGroup:
+    rule: RunAsAny
+  hostIPC: true
+  hostNetwork: true
+  hostPID: true
+  hostPorts:
+    - max: 65535
+      min: 0
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+    - "*"
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: antrea-system-privileged
+rules:
+  - apiGroups:
+      - policy
+      - extensions
+    resources:
+      - podsecuritypolicies
+    resourceNames:
+      - antrea-system-privileged
+    verbs:
+      - use
+
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: antrea-system-privileged
+  namespace: antrea
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: antrea-system-privileged
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: system:serviceaccounts
+  - kind: ServiceAccount
+    name: default
+    namespace: antrea
+  - kind: ServiceAccount
+    name: antrea
+    namespace: antrea

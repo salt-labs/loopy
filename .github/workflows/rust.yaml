@@ -136,9 +136,9 @@ jobs:
           Push-Location -Path "vcpkg"
           Start-Process ".\bootstrap-vcpkg.bat"
           vcpkg.exe install curl libmagic openssl zlib
+          vcpkg.exe integrate install
           Pop-Location
           choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
-          tree /F
 
       - id: cargo_check
         name: Run Cargo check
@@ -173,10 +173,11 @@ jobs:
         name: Run Cargo build (Windows)
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
         shell: powershell
+        env:
+          VCPKGRS_DYNAMIC: "1"
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          RUSTFLAGS: "-Ctarget-feature=+crt-static"
         run: |
-          $env:VCPKGRS_DYNAMIC = "1"
-          $env:VCPKG_ROOT = "$(Get-Location)\vcpkg"
-          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static"
           $env:LIB = "$env:VCPKG_ROOT\installed\x64-windows-static\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_ROOT\installed\x64-windows-static\include;$env:INCLUDE"
           cargo build --verbose
@@ -192,10 +193,11 @@ jobs:
         name: Run Cargo tests (Windows)
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
         shell: powershell
+        env:
+          VCPKGRS_DYNAMIC: "1"
+          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          RUSTFLAGS: "-Ctarget-feature=+crt-static"
         run: |
-          $env:VCPKGRS_DYNAMIC = "1"
-          $env:VCPKG_ROOT = "$(Get-Location)\vcpkg"
-          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static"
           $env:LIB = "$env:VCPKG_ROOT\installed\x64-windows-static\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_ROOT\installed\x64-windows-static\include;$env:INCLUDE"
           cargo test --verbose

@@ -1,11 +1,11 @@
 ---
 ##################################################
-# Name: giphy.yaml
+# Name: thumbs.yaml
 # Description:
-#   A Workflow that post giphy pics in PRs.
+#   A Workflow that posts Thumbs Up/Down comments.
 ##################################################
 
-name: Giphy
+name: Thumbs Up/Down
 
 on:
   pull_request:
@@ -32,12 +32,12 @@ env:
   BRANCH_NAME_DEFAULT: ${{ github.event.repository.default_branch }}
 
 jobs:
-  check:
-    name: Giphy status check
+  wait:
+    name: Wait for Jobs
 
     runs-on: ${{ matrix.os }}
 
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     strategy:
       fail-fast: true
@@ -77,9 +77,30 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           checkName: Cargo Test (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
 
+    outputs:
+      conclusion_linter: ${{ steps.wait_for_linter.outputs.conclusion }}
+      conclusion_rust: ${{ steps.wait_for_rust.outputs.conclusion }}
+
+  comment:
+    name: Thumbs
+
+    runs-on: ${{ matrix.os }}
+
+    timeout-minutes: 30
+
+    needs:
+      - wait
+
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+          - ubuntu-latest
+
+    steps:
       - id: pr_comment_thumbs_up
         name: PR Comment (Thumbs Up)
-        if: ${{ steps.wait_for_linter.outputs.conclusion == 'success' && steps.wait_for_rust.outputs.conclusion == 'success' }}
+        if: ${{ needs.wait.outputs.conclusion_linter == 'success' && needs.wait.outputs.conclusion_rust == 'success' }}
         uses: exercism/pr-commenter-action@v1.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -93,7 +114,7 @@ jobs:
 
       - id: pr_comment_thumbs_down
         name: PR Comment (Thumbs Down)
-        if: ${{ steps.wait_for_linter.outputs.conclusion != 'success' || steps.wait_for_rust.outputs.conclusion != 'success' }}
+        if: ${{ needs.wait.outputs.conclusion_linter != 'success' || needs.wait.outputs.conclusion_rust != 'success' }}
         uses: exercism/pr-commenter-action@v1.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

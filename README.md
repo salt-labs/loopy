@@ -16,13 +16,16 @@ For Rust users, `loopy` is available with `cargo`.
 cargo install loopy
 ```
 
-For everyone else, pre-packaged binaries are available in [releases](https://github.com/salt-labs/looper/releases).
+For everyone else, pre-packaged binaries are available in [releases](https://github.com/salt-labs/loopy/releases).
 
 ## Usage
 
 - Define your configuration in `loopy.yaml`
 
 ```bash
+# If you need a starter sample.
+curl --output loopy.yaml https://raw.githubusercontent.com/salt-labs/loopy/trunk/config/loopy.yaml
+
 vim loopy.yaml
 ```
 

@@ -6,11 +6,10 @@
 use crate::utils::run_command;
 
 use anyhow::{Context, Result};
-use log::{debug, error, info};
+use log::{debug, info};
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use std::process::Command;
 
 /// Install the given Helm repository if it doesn't already exist
 ///
@@ -37,8 +36,9 @@ pub fn helm_install_repo(name: &str, url: &str) -> Result<()> {
     let repo_list = run_command("helm", &["repo", "list"])?;
     if !repo_list.contains(name) {
         // If the helm repo doesn't currently exist, add it.
-        run_command("helm", &["repo", "add", name, url])
-            .with_context(|| format!("Failed to add Helm repository '{}'", name))?;
+        debug!("Adding Helm repo: {}", name);
+        let err_msg = format!("Failed to add Helm repository '{}'", name);
+        run_command("helm", &["repo", "add", name, url]).context(err_msg)?;
     }
 
     Ok(())
@@ -60,72 +60,76 @@ pub fn helm_update_repos() -> Result<()> {
     info!("Updating Helm repos");
 
     // Run the helm repo update command
-    run_command("helm", &["repo", "update"])
-        .with_context(|| "Failed to update Helm repositories")?;
+    let err_msg = "Failed to update Helm repositories".to_string();
+    run_command("helm", &["repo", "update"]).context(err_msg)?;
 
     Ok(())
 }
 
-//! Uninstall the given Helm chart release
-//!
-//! # Arguments
-//!
-//! * `name` - The name of the Helm release to uninstall
-//!
-//! # Examples
-//!
-//! ```rust
-//! use loopy::helm::helm_uninstall_chart;
-//! fn main() {
-//!     let result = helm_uninstall_chart("example");
-//!     assert!(result.is_ok());
-//! }
-//! ```
-//!
+/// Uninstall the given Helm chart release
+///
+/// # Arguments
+///
+/// * `name` - The name of the Helm release to uninstall
+///
+/// # Examples
+///
+/// ```rust
+/// use loopy::helm::helm_uninstall_chart;
+/// fn main() {
+///     let result = helm_uninstall_chart("example");
+///     assert!(result.is_ok());
+/// }
+/// ```
+///
 pub fn helm_uninstall_repo(name: &str) -> Result<()> {
     info!("Uninstalling Helm repo: {}", name);
 
     // Check if the helm repo exists
-    let repo_list = run_command("helm", &["repo", "list"])?;
+    let err_msg = "Failed to list Helm repositories".to_string();
+    let repo_list = run_command("helm", &["repo", "list"]).expect(&err_msg);
     if repo_list.contains(name) {
         // If the helm repo exists, remove it.
-        run_command("helm", &["repo", "remove", name])
-            .with_context(|| format!("Failed to remove Helm repository '{}'", name))?;
+        debug!("Removing Helm repo: {}", name);
+        let err_msg = format!("Failed to remove Helm repository '{}'", name);
+        run_command("helm", &["repo", "remove", name]).context(err_msg)?;
     }
 
     Ok(())
 }
 
-//! Install or upgrade the given Helm chart release
-//!
-//! # Arguments
-//!
-//! * `name` - The name of the Helm release to install or upgrade
-//! * `repo` - The Helm repository where the chart is located
-//!
-//! # Examples
-//!
-//! ```rust
-//! use loopy::helm::helm_install_chart;
-//! fn main() {
-//!     let result = helm_install_chart("example", "example-repo");
-//!     assert!(result.is_ok());
-//! }
-//! ```
-//!
+/// Install or upgrade the given Helm chart release
+///
+/// # Arguments
+///
+/// * `name` - The name of the Helm release to install or upgrade
+/// * `repo` - The Helm repository where the chart is located
+///
+/// # Examples
+///
+/// ```rust
+/// use loopy::helm::helm_install_chart;
+/// fn main() {
+///     let result = helm_install_chart("example", "example-repo");
+///     assert!(result.is_ok());
+/// }
+/// ```
+///
 pub fn helm_install_chart(name: &str, repo: &str) -> Result<()> {
     info!("Installing Helm chart: {}", name);
 
     // Check if the chart directory exists
-    let chart_dir = format!("helm/charts/{}", name);
+    let chart_dir = format!("config/helm/{}", name);
     if !Path::new(&chart_dir).exists() {
         return Err(anyhow::anyhow!(
-            "Helm chart directory '{}' does not exist",
+            "Helm chart directory '{}' does not exist. Please create the folder structure from the docs and try again.",
             chart_dir
         ));
+    } else {
+        debug!("Helm chart directory exists: {}", chart_dir);
     }
 
-    // Determine the values file to use
+    // Determine the values file to use.
     let values_file = if Path::new(&format!("{}/values.yaml", chart_dir)).exists() {
         format!("{}/values.yaml", chart_dir)
     } else {
@@ -171,22 +175,22 @@ pub fn helm_install_chart(name: &str, repo: &str) -> Result<()> {
     Ok(())
 }
 
-//! Uninstall the given Helm chart release
-//!
-//! # Arguments
-//!
-//! * `name` - The name of the Helm release to uninstall
-//!
-//! # Examples
-//!
-//! ```rust
-//! use loopy::helm::helm_uninstall_chart;
-//! fn main() {
-//!     let result = helm_uninstall_chart("example");
-//!     assert!(result.is_ok());
-//! }
-//! ```
-//!
+/// Uninstall the given Helm chart release
+///
+/// # Arguments
+///
+/// * `name` - The name of the Helm release to uninstall
+///
+/// # Examples
+///
+/// ```rust
+/// use loopy::helm::helm_uninstall_chart;
+/// fn main() {
+///     let result = helm_uninstall_chart("example");
+///     assert!(result.is_ok());
+/// }
+/// ```
+///
 pub fn helm_uninstall_chart(name: &str) -> Result<()> {
     info!("Uninstalling Helm chart: {}", name);
 
@@ -196,28 +200,30 @@ pub fn helm_uninstall_chart(name: &str) -> Result<()> {
         // If the helm release exists, uninstall it.
         run_command("helm", &["uninstall", name, "--namespace", name])
             .with_context(|| format!("Failed to uninstall Helm chart '{}'", name))?;
+    } else {
+        info!("Helm chart '{}' is not installed, skipping.", name)
     }
 
     Ok(())
 }
 
-//! Prepare the given Helm chart by creating its directory and defaults.yaml file if they don't already exist
-//!
-//! # Arguments
-//!
-//! * `name` - The name of the Helm chart to prepare
-//! * `repo` - The Helm repository where the chart is located
-//!
-//! # Examples
-//!
-//! ```rust
-//! use loopy::helm::helm_prepare_chart;
-//! fn main() {
-//!     let result = helm_prepare_chart("example", "example-repo");
-//!     assert!(result.is_ok());
-//! }
-//! ```
-//!
+/// Prepare the given Helm chart by creating its directory and defaults.yaml file if they don't already exist
+///
+/// # Arguments
+///
+/// * `name` - The name of the Helm chart to prepare
+/// * `repo` - The Helm repository where the chart is located
+///
+/// # Examples
+///
+/// ```rust
+/// use loopy::helm::helm_prepare_chart;
+/// fn main() {
+///     let result = helm_prepare_chart("example", "example-repo");
+///     assert!(result.is_ok());
+/// }
+/// ```
+///
 pub fn helm_prepare_chart(name: &str, repo: &str) -> Result<()> {
     info!("Preparing Helm chart: {}", name);
 

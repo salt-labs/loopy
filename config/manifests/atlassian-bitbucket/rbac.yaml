@@ -47,7 +47,7 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: atlassian-bitbucketsystem-privileged
+  name: atlassian-bitbucket-system-privileged
   namespace: atlassian-bitbucket
 roleRef:
   apiGroup: rbac.authorization.k8s.io

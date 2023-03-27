@@ -1,0 +1,55 @@
+---
+apiVersion: run.tanzu.vmware.com/v1alpha2
+kind: TanzuKubernetesCluster
+metadata:
+  annotations:
+  generation: 3
+  name: loopy
+  namespace: loopy
+spec:
+  distribution: null
+  version: v1.21
+  settings:
+    network:
+      cni:
+        name: antrea
+      pods:
+        cidrBlocks:
+          - 192.172.0.0/24
+      proxy:
+        httpProxy:
+        httpsProxy:
+        noProxy:
+          - 10.96.0.0/12
+          - 192.172.0.0/24
+          - 172.16.0.0/16
+          - 172.17.0.0/16
+          - 172.18.0.0/16
+          - localhost
+          - 127.0.0.1
+      serviceDomain: cluster.local
+      services:
+        cidrBlocks:
+          - 10.96.0.0/12
+      trust:
+        additionalTrustedCAs:
+          - name: certificate-authority
+            data:
+          - name: container-registry
+            data:
+  topology:
+    controlPlane:
+      replicas: 1
+      storageClass: vsan-default-storage-policy
+      tkr:
+        reference:
+          name: v1.20.12---vmware.1-tkg.1.b9a42f3
+      vmClass: best-effort-large
+    nodePools:
+      - name: workers
+        replicas: 3
+        storageClass: vsan-default-storage-policy
+        tkr:
+          reference:
+            name: v1.20.12---vmware.1-tkg.1.b9a42f3
+        vmClass: best-effort-large

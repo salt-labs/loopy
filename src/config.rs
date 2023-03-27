@@ -25,11 +25,13 @@ pub struct Log {
 #[derive(Debug, Deserialize)]
 pub struct Dependencies {
     pub tools: Vec<Tool>,
+    pub manifests: Vec<Manifests>,
     pub helm: Helm,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Application {
+    pub manifests: Vec<Manifests>,
     pub helm: Helm,
 }
 
@@ -38,6 +40,13 @@ pub struct Tool {
     pub name: String,
     pub bin: String,
     pub url: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Manifests {
+    pub name: String,
+    pub url: Option<String>,
+    pub dir: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,6 +59,7 @@ pub struct Helm {
 pub struct Repository {
     pub name: String,
     pub url: String,
+    pub values: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -109,6 +119,24 @@ fn validate_config(config: &Config) -> Result<()> {
         }
     }
 
+    // Validate dependencies.manifests
+    for manifest in &config.dependencies.manifests {
+        // Ensure that the name field of each manifest is not empty.
+        let err_msg = "The 'name' field of all defined manifests cannot be empty.".to_string();
+        if manifest.name.trim().is_empty() {
+            anyhow::bail!(err_msg);
+        }
+
+        // Ensure that either the url or dir field of each manifest is not empty.
+        let err_msg = format!(
+            "The 'url' and 'dir' field of {} cannot both be empty.",
+            manifest.name
+        );
+        if manifest.url.is_none() && manifest.dir.is_none() {
+            anyhow::bail!(err_msg);
+        }
+    }
+
     // Validate dependencies.helm.repositories
     for repo in &config.dependencies.helm.repositories {
         // Ensure that the name field of each repository is not empty.
@@ -140,6 +168,26 @@ fn validate_config(config: &Config) -> Result<()> {
         if chart.repo.trim().is_empty() {
             anyhow::bail!(err_msg);
         }
+
+        // The values field is optional.
+    }
+
+    // Validate application.manifests
+    for manifest in &config.application.manifests {
+        // Ensure that the name field of each manifest is not empty.
+        let err_msg = "The 'name' field of all defined manifests cannot be empty.".to_string();
+        if manifest.name.trim().is_empty() {
+            anyhow::bail!(err_msg);
+        }
+
+        // Ensure that either the url or dir field of each manifest is not empty.
+        let err_msg = format!(
+            "The 'url' and 'dir' field of {} cannot both be empty.",
+            manifest.name
+        );
+        if manifest.url.is_none() && manifest.dir.is_none() {
+            anyhow::bail!(err_msg);
+        }
     }
 
     // Validate application.helm.repositories
@@ -157,6 +205,8 @@ fn validate_config(config: &Config) -> Result<()> {
                 anyhow::bail!(err_msg);
             }
         }
+
+        // The values field is optional.
     }
 
     // Validate application.helm.charts

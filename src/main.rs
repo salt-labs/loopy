@@ -20,13 +20,12 @@
 //! by running ```loopy --help```.
 //!
 
-//use crate::helm::{
-//    helm_install_chart, helm_install_repo, helm_uninstall_chart, helm_uninstall_repo,
-//};
+//use crate::helm::helm_uninstall_chart;
 //use crate::kubectl::{kubectl_apply_dir, kubectl_apply_file, kubectl_delete_dir};
 use crate::utils::{
     check_command_in_path, create_dir, download_tool, figlet, run_command, update_path,
 };
+//use anyhow::{Context, Result};
 use anyhow::Result;
 use log::{debug, info, warn, LevelFilter};
 use std::env;
@@ -164,8 +163,9 @@ async fn main() -> Result<()> {
         // Uninstall all Helm releases (applications)
         for chart in &config.application.helm.charts {
             println!("Uninstalling Helm chart: {}", chart.name);
-            helm_uninstall_chart(chart.name)
-                .with_context(|| format!("Failed to uninstall Helm chart {}", chart.name))?;
+            let err_msg = format!("Failed to uninstall Helm chart {}", chart.name);
+            helm_uninstall_chart(&chart.name).context(err_msg)?;
+            println!("Successfully uninstalled Helm chart: {}", chart.name);
         }
 
         // Uninstall all Helm releases (dependencies)

@@ -18,6 +18,12 @@ dependencies:
       bin: kind
       url: https://github.com/kubernetes-sigs/kind/releases/download/v0.17.0/kind-linux-amd64
 
+  manifests:
+    - name: contour-gateway
+      url: https://projectcontour.io/quickstart/contour.yaml
+    - name: test
+      dir: test
+
   # Helm specific configuration
   helm:
     repositories:
@@ -43,8 +49,13 @@ dependencies:
       - name: ako
         repo: ako
 
+    # TODO: Finish Carvel implementation.
+    carvel:
+
 # Application specific configuration
 application:
+  manifests:
+
   helm:
     repositories:
       - name: atlassian
@@ -54,11 +65,19 @@ application:
     charts:
       - name: bamboo
         repo: atlassian
+        values: atlassian-bamboo
       - name: bitbucket
         repo: atlassian
+        values: atlassian-bitbucket
       - name: confluence
         repo: atlassian
+        values: atlassian-confluence
       - name: crowd
         repo: atlassian
+        values: atlassian-crowd
       - name: jira
         repo: atlassian
+        values: atlassian-jira
+
+    # TODO: Finish Carvel implementation.
+    carvel:

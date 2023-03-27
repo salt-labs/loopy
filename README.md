@@ -10,32 +10,54 @@ It's useful for those times when you find yourself testing the same inner-feedba
 
 ## Installation
 
-For Rust users, `loopy` is available with `cargo`.
+- For Rust users, `loopy` is available with `cargo`.
 
 ```bash
 cargo install loopy
 ```
 
-For everyone else, pre-packaged binaries are available in [releases](https://github.com/salt-labs/loopy/releases).
+- For everyone else, pre-packaged binaries are available in [releases](https://github.com/salt-labs/loopy/releases).
 
 ## Usage
+
+Once you have `loopy` installed, there are couple of things you need to do to get up and running.
+
+- Create the folder structure.
+
+```bash
+# Where you want to store your loopy configuration.
+LOOPY_HOME="${HOME}/loopy"
+
+# Create the folder structure.
+mkdir --parents "${LOOPY_HOME}/config/{capi,helm,manifests,carvel}"
+
+cd "${LOOPY_HOME}"
+```
 
 - Define your configuration in `loopy.yaml`
 
 ```bash
 # If you need a starter sample.
-curl --output loopy.yaml https://raw.githubusercontent.com/salt-labs/loopy/trunk/config/loopy.yaml
+curl --output "${LOOPY_HOME}/loopy.yaml" https://raw.githubusercontent.com/salt-labs/loopy/trunk/config/loopy.yaml
 
 vim loopy.yaml
 ```
 
-- Deploy a `kind` cluster if you need one.
+- If you need a `kind` cluster for local testing, there is a sample configuration in the `config/capi/kind` directory with usage instructions in the [kind](./docs/kind.md) section.
+
+- Before continuing, ensure you are connected to the cluster.
 
 ```bash
-kind create cluster --name loopy --config config/capi/kind/config.yaml
+kubectl cluster-info
 ```
 
-- Run `loopy`
+- Review the available commands.
+
+```bash
+loopy --help
+```
+
+- When ready, run `loopy`
 
 ```bash
 loopy --config loopy.yaml

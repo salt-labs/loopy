@@ -688,12 +688,13 @@ pub fn run_command(cmd_name: &str, args: &[&str]) -> Result<String> {
         .with_context(|| format!("Failed to execute command '{}'", cmd_name))?;
 
     if output.status.success() {
-        println!("Command '{}' succeeded", cmd_name);
+        println!("Command '{} {}' succeeded", cmd_name, args.join(" "));
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
     } else {
         Err(anyhow::anyhow!(
-            "Command '{}' failed with error: {}",
+            "Command '{} {}' failed with error: {}",
             cmd_name,
+            args.join(" "),
             String::from_utf8_lossy(&output.stderr)
         ))
     }

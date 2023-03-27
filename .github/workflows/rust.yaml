@@ -83,7 +83,7 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           Push-Location -Path "vcpkg"
-          Start-Process ".\bootstrap-vcpkg.bat
+          Start-Process ".\bootstrap-vcpkg.bat"
           vcpkg.exe install curl libmagic libpq libuv openssl sqlite3 zlib
           Pop-Location
 
@@ -201,7 +201,7 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           Push-Location -Path "vcpkg"
-          Start-Process ".\bootstrap-vcpkg.bat
+          Start-Process ".\bootstrap-vcpkg.bat"
           vcpkg.exe install curl libmagic libpq libuv openssl sqlite3 zlib
           Pop-Location
 
@@ -245,8 +245,11 @@ jobs:
 
       - name: cargo_test_windows
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        shell: powershell
         run: |
-          set "VCPKGRS_DYNAMIC=1"
-          set "VCPKG_ROOT=%cd%\vcpkg"
-          set "RUSTFLAGS=-Clinker=%VCPKG_ROOT%\installed\x64-windows-static\tools\llvm\bin\lld-link.exe -Ctarget-feature=+crt-static"
+          $env:VCPKGRS_DYNAMIC = "1"
+          $env:VCPKG_ROOT = "$(Get-Location)\vcpkg"
+          $env:RUSTFLAGS = "-Clinker=$env:VCPKG_ROOT\installed\x64-windows-static\tools\llvm\bin\lld-link.exe -Ctarget-feature=+crt-static"
+          $env:LIB = "$env:VCPKG_ROOT\installed\x64-windows-static\lib;$env:LIB"
+          $env:INCLUDE = "$env:VCPKG_ROOT\installed\x64-windows-static\include;$env:INCLUDE"
           cargo test --verbose

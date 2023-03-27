@@ -197,7 +197,7 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           ".\vcpkg\bootstrap-vcpkg.bat"
-          ".\vcpkg\vcpkg.exe install libmagic:x64-windows-static"
+          ".\vcpkg\vcpkg.exe" install libmagic:x64-windows-static
 
       - id: checkout_repository
         name: Checkout repository

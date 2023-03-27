@@ -93,7 +93,7 @@ jobs:
           vcpkg.exe install curl libmagic libpq libuv llvm openssl sqlite3 zlib
           Pop-Location
           # Install Visual Studio Build Tools to use instead of LLVM
-          #choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
 
       - id: checkout_repository
         name: Checkout repository
@@ -219,7 +219,7 @@ jobs:
           vcpkg.exe install curl libmagic libpq libuv llvm openssl sqlite3 zlib
           Pop-Location
           # Install Visual Studio Build Tools to use instead of LLVM
-          #choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
 
       - id: checkout_repository
         name: Checkout repository

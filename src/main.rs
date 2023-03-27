@@ -32,7 +32,7 @@ use log::{debug, info, warn, LevelFilter};
 use std::env;
 use std::io;
 use std::path::PathBuf;
-use std::process::exit;
+
 use std::str::FromStr;
 
 mod args;
@@ -125,20 +125,16 @@ async fn main() -> Result<()> {
                     create_dir(&vendor_dir)?;
 
                     // Download the tool and place in the vendor directory.
-                    let binary_path = download_tool(
-                        &client,
-                        &tool.url.as_ref().unwrap(),
-                        &tool.name,
-                        &vendor_dir,
-                    )
-                    .await?;
+                    let binary_path =
+                        download_tool(&client, tool.url.as_ref().unwrap(), &tool.name, &vendor_dir)
+                            .await?;
                     println!("Successfully downloaded {}", tool.name);
 
                     // Update the PATH environment variable to include the vendor directory.
                     update_path(&vendor_dir);
 
                     // Make the downloaded tool executable.
-                    run_command("chmod", &["+x", &binary_path.to_str().unwrap()])?;
+                    run_command("chmod", &["+x", (binary_path.to_str().unwrap())])?;
 
                     println!("{} is now available in PATH", tool.name);
                 } else {

@@ -183,14 +183,14 @@ pub fn update_path(dir: &PathBuf) {
     // Add the provided directory to the PATH if it does not already exist.
     if !paths.contains(&dir) {
         debug! {"Adding {:?} to PATH", &dir};
-        paths.push(dir.clone());
+        paths.push(dir);
     } else {
         debug!("Directory already exists in PATH: {:?}", dir);
     }
 
     // Update the PATH environment variable.
     let new_path = env::join_paths(paths).expect("Failed to join PATHs");
-    env::set_var("PATH", &new_path);
+    env::set_var("PATH", new_path);
 
     debug!("PATH: {:?}", env::var_os("PATH"));
 }
@@ -386,7 +386,7 @@ fn extract_archive_zip(file: File, dest: &Path) -> Result<PathBuf> {
         } else {
             if let Some(p) = outpath.parent() {
                 if !p.exists() {
-                    create_dir_all(&p)?;
+                    create_dir_all(p)?;
                 }
             }
             let mut outfile = File::create(&outpath)?;
@@ -595,14 +595,14 @@ pub async fn download_tool(
     create_dir(&vendor_dir.to_path_buf())?;
 
     // Define where the tool will be downloaded to and where it will be moved to.
-    let tool_download_path = temp_dir.path().join(&name);
-    let tool_vendor_path = vendor_dir.join(&name);
+    let tool_download_path = temp_dir.path().join(name);
+    let tool_vendor_path = vendor_dir.join(name);
 
     debug!("Tool download path: {}", tool_download_path.display());
     debug!("Tool vendor path: {}", tool_vendor_path.display());
 
     let mut file =
-        File::create(&tool_download_path).context(format!("Failed to create temporary file"))?;
+        File::create(&tool_download_path).context("Failed to create temporary file".to_string())?;
 
     let mut downloaded: u64 = 0;
     let mut stream = res.bytes_stream();
@@ -637,21 +637,21 @@ pub async fn download_tool(
                 .context("Failed to extract archive. Review the log for further information.")?;
             info!("Extracted archive to {}", extracted_archive.display());
             // Search the extracted archive for the binary
-            binary_path = search_archive(&extracted_archive, &name)?;
+            binary_path = search_archive(&extracted_archive, name)?;
         }
     } else {
         debug!("Not an archive file: {}", tool_download_path.display());
     }
 
     // Copy the downloaded binary to the vendor directory
-    let target_path = vendor_dir.join(&name);
+    let target_path = vendor_dir.join(name);
     debug!(
         "Copying binary {} to vendor directory: {}",
         binary_path.display(),
         target_path.display()
     );
     std::fs::copy(&binary_path, &target_path)
-        .context(format!("Failed to move binary to vendor directory"))?;
+        .context("Failed to move binary to vendor directory".to_string())?;
 
     Ok(target_path)
 }

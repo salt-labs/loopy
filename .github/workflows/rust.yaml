@@ -144,6 +144,9 @@ jobs:
 
     timeout-minutes: 60
 
+    needs:
+      - cargo_check
+
     strategy:
       fail-fast: false
       matrix:

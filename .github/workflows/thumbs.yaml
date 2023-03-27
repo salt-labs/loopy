@@ -53,6 +53,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           checkName: GitHub Super-Linter (${{ matrix.os }})
+          timeoutSeconds: 3600
+          intervalSeconds: 30
 
     outputs:
       conclusion: ${{ steps.wait_for_linter.outputs.conclusion }}
@@ -93,6 +95,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           checkName: Cargo Test (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
+          timeoutSeconds: 3600
+          intervalSeconds: 30
 
     outputs:
       conclusion: ${{ steps.wait_for_rust.outputs.conclusion }}

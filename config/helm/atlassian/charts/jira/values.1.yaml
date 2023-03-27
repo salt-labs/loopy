@@ -33,7 +33,7 @@ image:
   # -- The Jira Docker image to use
   # https://hub.docker.com/r/atlassian/jira-software
   #
-  repository: harbor.poc.dcse.mil.au/docker.io/atlassian/jira-software
+  repository: harbor.saltlabs.cloud/docker.io/atlassian/jira-software
 
   # -- Image pull policy
   #
@@ -335,7 +335,7 @@ ingress:
   # this hostname will be routed by the Ingress Resource to the appropriate backend
   # Service.
   #
-  host: atlassian-test.poc.dcse.mil.au
+  host: atlassian-test.saltlabs.cloud
 
   # -- The base path for the Ingress Resource. For example '/jira'. Based on a
   # 'ingress.host' value of 'company.k8s.com' this would result in a URL of

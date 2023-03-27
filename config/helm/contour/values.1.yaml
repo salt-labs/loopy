@@ -9,7 +9,7 @@
 ## @param global.storageClass Global StorageClass for Persistent Volume(s)
 ##
 global:
-  imageRegistry: harbor.poc.dcse.mil.au/docker.io
+  imageRegistry: harbor.saltlabs.cloud/docker.io
   ## E.g.
   ## imagePullSecrets:
   ##   - myRegistryKeySecretName

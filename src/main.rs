@@ -14,7 +14,7 @@
 //! an example configuration file in the examples folder within this repository.
 //!
 //! You can run loopy with `--config` pointing to the configuration file and by
-//! default will look for `config.yaml` in the current directory.
+//! default will look for `loopy.yaml` in the current directory.
 //!
 //! Additional usage information for the ```loopy``` application is available
 //! by running ```loopy --help```.
@@ -40,14 +40,20 @@ mod config;
 //mod helm;
 //mod kubectl;
 mod logger;
+mod msvc;
 mod utils;
 
+// Constants.
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 const VENDOR_PATH: &str = "vendor";
 const DEFAULT_CONFIG_FILE: &str = "loopy.yaml";
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // Build dependencies for Windows.
+    #[cfg(target_env = "msvc")]
+    msvc::link_libraries();
+
     // Let's begin.
     figlet(PACKAGE_NAME, None, None, None);
 
@@ -59,7 +65,7 @@ async fn main() -> Result<()> {
         config, cleanup, ..
     } = args;
 
-    // Set config file path, use the provided config file or default to "config.yaml"
+    // Set config file path, use the provided config file or default to 'loopy.yaml'
     let config_file = match config {
         Some(file) => file,
         None => DEFAULT_CONFIG_FILE.to_string(),
@@ -106,7 +112,10 @@ async fn main() -> Result<()> {
 
             // If a URL was provided, prompt the user to download the tool.
             if tool.url.as_ref().map_or(true, |url| url.is_empty()) {
-                println!("Please download {} and add it to PATH", tool.name);
+                println!(
+                    "Please download the required tool {} and add it to your PATH",
+                    tool.name
+                );
                 std::process::exit(1);
             } else {
                 println!(

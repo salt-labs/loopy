@@ -153,106 +153,24 @@ jobs:
           cargo clippy --version
           cargo clippy --all --all-features -- -D warnings
 
-  #########################
-  # Run Unit Tests
-  #########################
-
-  cargo_test:
-    name: Cargo Test
-
-    runs-on: ${{ matrix.os }}
-
-    timeout-minutes: 60
-
-    needs:
-      - cargo_check
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            toolchain: stable
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-            toolchain: stable
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            toolchain: stable
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            toolchain: stable
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            toolchain: stable
-        #exclude:
-
-    steps:
-      - id: setup_rust
-        name: Setup the Rust environment
-        uses: actions-rs/toolchain@v1
-        with:
-          target: ${{ matrix.target }}
-          toolchain: ${{ matrix.toolchain }}
-          default: true
-
-      - id: setup_rust_arm64
-        name: Setup the Rust environment for ARM64
-        if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
+      - id: cargo_build
+        name: Run Cargo build
+        if: matrix.target != 'x86_64-pc-windows-msvc'
         run: |
-          sudo apt install gcc-multilib
+          cargo --version
+          cargo build --verbose
 
-      - id: setup_rust_macos
-        name: Setup the Rust environment for MacOS
-        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
-        run: |
-          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar zlib zstd
-
-      - id: setup_rust_windows
-        name: Setup the Rust environment for Windows
+      - id: cargo_build_windows
+        name: Run Cargo build (Windows)
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          Push-Location -Path "vcpkg"
-          Start-Process ".\bootstrap-vcpkg.bat"
-          vcpkg.exe install curl libmagic libpq libuv llvm openssl sqlite3 zlib
-          Pop-Location
-          # Install Visual Studio Build Tools to use instead of LLVM
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
-          tree /F
-
-      - id: checkout_repository
-        name: Checkout repository
-        uses: actions/checkout@v2
-
-      - id: cache_artifacts_cargo_registry
-        name: Cache Cargo registry
-        uses: actions/cache@v2
-        with:
-          path: ~/.cargo/registry
-          key: ${{ matrix.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ matrix.target }}-cargo-registry-
-
-      - id: cache_artifacts_cargo_index
-        name: Cache Cargo index
-        uses: actions/cache@v2
-        with:
-          path: ~/.cargo/git
-          key: ${{ matrix.target }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ matrix.target }}-cargo-index-
-
-      - id: cache_artifacts_cargo_target
-        name: Cache Cargo build
-        uses: actions/cache@v2
-        with:
-          path: target/release
-          key: ${{ matrix.target }}-target-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ matrix.target }}-target-
+          $env:VCPKGRS_DYNAMIC = "1"
+          $env:VCPKG_ROOT = "$(Get-Location)\vcpkg"
+          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static"
+          $env:LIB = "$env:VCPKG_ROOT\installed\x64-windows-static\lib;$env:LIB"
+          $env:INCLUDE = "$env:VCPKG_ROOT\installed\x64-windows-static\include;$env:INCLUDE"
+          cargo build --verbose
 
       - id: cargo_test
         name: Run Cargo tests
@@ -261,16 +179,14 @@ jobs:
           cargo --version
           cargo test --verbose
 
-      - name: cargo_test_windows
+      - id: cargo_test_windows
+        name: Run Cargo tests (Windows)
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
         shell: powershell
         run: |
           $env:VCPKGRS_DYNAMIC = "1"
           $env:VCPKG_ROOT = "$(Get-Location)\vcpkg"
-          # LLVM
-          #$env:RUSTFLAGS = "-Clinker=$env:VCPKG_ROOT\installed\x64-windows-static\tools\llvm\bin\lld-link.exe -Ctarget-feature=+crt-static"
-          # MSVC
-          $env:RUSTFLAGS = "-Ctarget-feature=+
+          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static"
           $env:LIB = "$env:VCPKG_ROOT\installed\x64-windows-static\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_ROOT\installed\x64-windows-static\include;$env:INCLUDE"
           cargo test --verbose

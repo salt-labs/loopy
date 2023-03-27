@@ -169,7 +169,8 @@ pub fn update_path(dir: &PathBuf) {
             dir
         }
         Err(e) => {
-            error!("Failed to get canonical path of {:?} - {}", dir, e);
+            debug!("Failed to get canonical path of {:?} - {}", dir, e);
+            create_dir(dir).expect("Failed to create required directory");
             return;
         }
     };

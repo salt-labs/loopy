@@ -11,14 +11,18 @@ chrono = "0.4"
 clap = { version = "4.1.13", features = ["cargo", "derive"] }
 colored = "2.0"
 crossterm = "0.26.1"
+curl-sys = "0.4.27"
 env_logger = "0.10.0"
 fern = "0.6.2"
 figlet-rs = "0.1.5"
 flate2 = "1.0"
 futures-util = "0.3.14"
 indicatif = "0.17.3"
+libz-sys = "1.1.8"
 log = "0.4"
 magic = "0.13.0"
+magic-sys = "0.3.0"
+openssl-sys = "0.9.70"
 reqwest = { version = "0.11", features = ["stream", "blocking", "json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -26,9 +30,15 @@ serde_yaml = "0.9.19"
 tar = "0.4"
 tempfile = "3.2.0"
 tokio = { version = "1", features = ["full"] }
+vcpkg = "0.2.15"
 which = "4.2.1"
 zip = "0.6.4"
 
 [build-dependencies]
 serde = "1.0"
 serde_json = "1.0"
+
+[package.metadata.vcpkg]
+git = "https://github.com/microsoft/vcpkg"
+rev = "master"
+dependencies = ["curl", "libmagic", "openssl", "zlib"]

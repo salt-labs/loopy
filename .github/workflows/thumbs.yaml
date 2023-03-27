@@ -94,7 +94,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          checkName: Cargo Test (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
+          checkName: Cargo Check (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
           timeoutSeconds: 1800
           intervalSeconds: 30
 
@@ -106,7 +106,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     needs:
       - wait_linter

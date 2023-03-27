@@ -29,10 +29,10 @@ curl --output loopy.yaml https://raw.githubusercontent.com/salt-labs/loopy/trunk
 vim loopy.yaml
 ```
 
-- Deploy a `kind` cluster
+- Deploy a `kind` cluster if you need one.
 
 ```bash
-kind create cluster --name loopy --config capi/kind/config.yaml
+kind create cluster --name loopy --config config/capi/kind/config.yaml
 ```
 
 - Run `loopy`

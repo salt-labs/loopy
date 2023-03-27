@@ -33,7 +33,7 @@ image:
   # -- The Confluence Docker image to use
   # https://hub.docker.com/r/atlassian/confluence-server
   #
-  repository: harbor.poc.dcse.mil.au/docker.io/atlassian/confluence
+  repository: harbor.saltlabs.cloud/docker.io/atlassian/confluence
 
   # -- Image pull policy
   #
@@ -295,7 +295,7 @@ volumes:
 
       # -- Image repository for the permission fixer init container. Defaults to alpine
       #
-      imageRepo: harbor.poc.dcse.mil.au/docker.io/alpine
+      imageRepo: harbor.saltlabs.cloud/docker.io/alpine
 
       # -- Image tag for the permission fixer init container. Defaults to latest
       #
@@ -434,9 +434,9 @@ ingress:
   # Service.
   #
   # Example 1
-  host: atlassian-test.poc.dcse.mil.au
+  host: atlassian-test.saltlabs.cloud
   # Example 2
-  #host: confluence.apps.poc.dcse.mil.au
+  #host: confluence.apps.saltlabs.cloud
 
   # -- The base path for the Ingress Resource. For example '/confluence'. Based on a
   # 'ingress.host' value of 'company.k8s.com' this would result in a URL of
@@ -953,7 +953,7 @@ fluentd:
 
   # -- The Fluentd sidecar image repository
   #
-  imageRepo: harbor.poc.dcse.mil.au/docker.io/fluent/fluentd-kubernetes-daemonset
+  imageRepo: harbor.saltlabs.cloud/docker.io/fluent/fluentd-kubernetes-daemonset
 
   # -- The Fluentd sidecar image tag
   #

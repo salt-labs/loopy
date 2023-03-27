@@ -80,7 +80,7 @@ jobs:
         name: Setup the Rust environment for MacOS
         if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
         run: |
-          brew install libmagic openssl pkg-config bzip2 figlet file gnutar xxd zlib zstd
+          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar xxd zlib zstd
 
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows
@@ -90,8 +90,10 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           Push-Location -Path "vcpkg"
           Start-Process ".\bootstrap-vcpkg.bat"
-          vcpkg.exe install curl libmagic libpq libuv openssl sqlite3 zlib
+          vcpkg.exe install curl libmagic libpq libuv llvm openssl sqlite3 zlib
           Pop-Location
+          # Install Visual Studio Build Tools to use instead of LLVM
+          #choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
 
       - id: checkout_repository
         name: Checkout repository
@@ -204,7 +206,7 @@ jobs:
         name: Setup the Rust environment for MacOS
         if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
         run: |
-          brew install libmagic openssl pkg-config bzip2 figlet file gnutar xxd zlib zstd
+          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar xxd zlib zstd
 
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows
@@ -214,8 +216,10 @@ jobs:
           git clone https://github.com/microsoft/vcpkg.git
           Push-Location -Path "vcpkg"
           Start-Process ".\bootstrap-vcpkg.bat"
-          vcpkg.exe install curl libmagic libpq libuv openssl sqlite3 zlib
+          vcpkg.exe install curl libmagic libpq libuv llvm openssl sqlite3 zlib
           Pop-Location
+          # Install Visual Studio Build Tools to use instead of LLVM
+          #choco install visualstudio2019buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
 
       - id: checkout_repository
         name: Checkout repository
@@ -261,7 +265,10 @@ jobs:
         run: |
           $env:VCPKGRS_DYNAMIC = "1"
           $env:VCPKG_ROOT = "$(Get-Location)\vcpkg"
+          # LLVM
           $env:RUSTFLAGS = "-Clinker=$env:VCPKG_ROOT\installed\x64-windows-static\tools\llvm\bin\lld-link.exe -Ctarget-feature=+crt-static"
+          # MSVC
+          #$env:RUSTFLAGS = "-Ctarget-feature=+
           $env:LIB = "$env:VCPKG_ROOT\installed\x64-windows-static\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_ROOT\installed\x64-windows-static\include;$env:INCLUDE"
           cargo test --verbose

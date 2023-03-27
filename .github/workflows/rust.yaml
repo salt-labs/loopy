@@ -80,7 +80,7 @@ jobs:
         name: Setup the Rust environment for MacOS
         if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
         run: |
-          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar xxd zlib zstd
+          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar zlib zstd
 
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows
@@ -207,7 +207,7 @@ jobs:
         name: Setup the Rust environment for MacOS
         if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
         run: |
-          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar xxd zlib zstd
+          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar zlib zstd
 
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows

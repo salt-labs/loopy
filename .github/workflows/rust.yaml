@@ -76,6 +76,12 @@ jobs:
         run: |
           sudo apt install gcc-multilib
 
+      - id: setup_rust_macos
+        name: Setup the Rust environment for MacOS
+        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
+        run: |
+          brew install libmagic openssl pkg-config bzip2 figlet file gnutar xxd zlib zstd
+
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
@@ -193,6 +199,12 @@ jobs:
         if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
         run: |
           sudo apt install gcc-multilib
+
+      - id: setup_rust_macos
+        name: Setup the Rust environment for MacOS
+        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
+        run: |
+          brew install libmagic openssl pkg-config bzip2 figlet file gnutar xxd zlib zstd
 
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows

@@ -83,14 +83,8 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           Push-Location -Path "vcpkg"
-          Start-Process ".\bootstrap-vcpkg.bat"
-          vcpkg.exe install curl
-          vcpkg.exe install libmagic
-          vcpkg.exe install libpq
-          vcpkg.exe install libuv
-          vcpkg.exe install openssl
-          vcpkg.exe install sqlite3
-          vcpkg.exe install zlib
+          Start-Process ".\bootstrap-vcpkg.bat
+          vcpkg.exe install curl libmagic libpq libuv openssl sqlite3 zlib
           Pop-Location
 
       - id: checkout_repository
@@ -207,14 +201,8 @@ jobs:
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           Push-Location -Path "vcpkg"
-          `.\bootstrap-vcpkg.bat`
-          `.\vcpkg.exe` install curl
-          `.\vcpkg.exe` install libmagic
-          `.\vcpkg.exe` install libpq
-          `.\vcpkg.exe` install libuv
-          `.\vcpkg.exe` install openssl
-          `.\vcpkg.exe` install sqlite3
-          `.\vcpkg.exe` install zlib
+          Start-Process ".\bootstrap-vcpkg.bat
+          vcpkg.exe install curl libmagic libpq libuv openssl sqlite3 zlib
           Pop-Location
 
       - id: checkout_repository

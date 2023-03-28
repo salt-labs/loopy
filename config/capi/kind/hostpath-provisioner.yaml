@@ -125,3 +125,13 @@ metadata:
     storageclass.kubernetes.io/is-default-class: "true"
 reclaimPolicy: Delete
 provisioner: example.com/hostpath
+
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: vsan-default-storage-policy
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+reclaimPolicy: Delete
+provisioner: example.com/hostpath

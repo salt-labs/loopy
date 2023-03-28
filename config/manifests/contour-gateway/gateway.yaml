@@ -1,0 +1,98 @@
+---
+# https://gateway-api.sigs.k8s.io/api-types/gatewayclass/#gatewayclass-parameters
+
+kind: GatewayClass
+apiVersion: gateway.networking.k8s.io/v1beta1
+metadata:
+  name: gateway
+spec:
+  controllerName: projectcontour.io/gateway-controller
+  parametersRef:
+    kind: ContourDeployment
+    group: projectcontour.io
+    name: contour-envoy
+    namespace: projectcontour
+
+---
+# https://gateway-api.sigs.k8s.io/api-types/gateway/
+
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1beta1
+metadata:
+  name: contour
+  namespace: projectcontour
+spec:
+  gatewayClassName: gateway
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8080
+      hostname: "*.saltlabs.cloud"
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: https
+      protocol: HTTPS
+      port: 8443
+      hostname: "*.saltlabs.cloud"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        certificateRefs:
+          - kind: Secret
+            group: ""
+            name: ingress-tls
+            namespace: projectcontour
+
+---
+# https://projectcontour.io/docs/main/config/api/#projectcontour.io/v1alpha1.ContourDeployment
+
+kind: ContourDeployment
+apiVersion: projectcontour.io/v1alpha1
+metadata:
+  name: contour-envoy
+  namespace: projectcontour
+spec:
+  contour:
+    kubernetesLogLevel: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    deployment:
+      replicas: 1
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 1
+          maxSurge: 1
+  envoy:
+    logLevel: "info"
+    workloadType: Deployment
+    replicas: 1
+    networkPublishing:
+      type: LoadBalancerService
+      #type: NodePortService
+      #type: ClusterIPService
+      #externalTrafficPolicy: Local
+      #externalTrafficPolicy: Cluster
+    podAnnotations:
+      cert-manager.io/issuer: ca-selfsigned-issuer
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    deployment:
+      replicas: 1
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxUnavailable: 1
+          maxSurge: 1

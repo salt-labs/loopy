@@ -17,5 +17,5 @@ kubectl apply -f "${SCRIPT_DIR}/config.yaml"
 LB_IP=$(kubectl get svc/test -n test -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
 echo "LoadBalancer IP: ${LB_IP}"
 for _ in {1..10}; do
-	curl --verbose ${LB_IP}:5678
+	curl --verbose ${LB_IP}:80
 done

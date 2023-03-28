@@ -162,7 +162,7 @@ jobs:
           VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
           VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
         run: |
-          $env:LIBMAGIC_DIR: "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
+          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
           $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
@@ -205,7 +205,7 @@ jobs:
           VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
           VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
         run: |
-          $env:LIBMAGIC_DIR: "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
+          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
           $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
@@ -231,7 +231,7 @@ jobs:
           VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
           VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
         run: |
-          $env:LIBMAGIC_DIR: "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
+          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
           $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"

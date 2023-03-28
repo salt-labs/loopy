@@ -38,8 +38,7 @@ rules:
     resources:
       - podsecuritypolicies
     resourceNames:
-      - atlassian-system-privileged
-      - vmware-system-privileged
+      - bamboo-agent-system-privileged
     verbs:
       - use
 
@@ -59,7 +58,7 @@ subjects:
     name: system:serviceaccounts
   - kind: ServiceAccount
     name: default
-    namespace: atlassian-bamboo-agent
+    namespace: bamboo-agent
   - kind: ServiceAccount
     name: bamboo-agent
-    namespace: atlassian-bamboo-agent
+    namespace: bamboo-agent

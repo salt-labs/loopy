@@ -183,20 +183,22 @@ async fn kubectl_manifests(
             .await
             .context(err_msg)?;
 
-        if namespace_exists {
+        let wait_time = if namespace_exists {
             debug!("Namespace {} already exists", PACKAGE_NAME);
+            30
         } else {
             debug!("Namespace {} does not exist", PACKAGE_NAME);
-            // TODO: Fix more jankiness
-            // Even more jankiness. Need to sleep in between applying the CRDs
-            // and the rest of the manifests. Otherwise, the CRDs are not
-            // available when the rest of the manifests are applied.
-            let wait_time = 60;
-            if action == "apply" {
-                println!("Waiting for CRDs to be available...");
-                info!("Waiting {} seconds for CRDs to be available...", wait_time);
-                std::thread::sleep(std::time::Duration::from_secs(wait_time));
-            }
+            300
+        };
+
+        // TODO: Fix more jankiness
+        // Even more jankiness. Need to sleep in between applying the CRDs
+        // and the rest of the manifests. Otherwise, the CRDs are not
+        // available when the rest of the manifests are applied.
+        if action == "apply" {
+            println!("Waiting for CRDs to be available...");
+            info!("Waiting {} seconds for CRDs to be available...", wait_time);
+            std::thread::sleep(std::time::Duration::from_secs(wait_time));
         }
 
         // Apply or delete the rest of the manifest files in the original order.

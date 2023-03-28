@@ -24,6 +24,10 @@ dependencies:
       dir: contour
     - name: test
       dir: test
+    #- name: postgresql-ha
+    #  dir: postgresql-ha
+    #- name: nfs-server-provisioner
+    #  dir: nfs-server-provisioner
 
   helm:
     repositories:
@@ -41,11 +45,43 @@ dependencies:
         repo: bitnami
         namespace: projectcontour
         values: values-http.yaml
+      #- name: postgresql-ha
+      #  repo: bitnami
+      #- name: nfs-server-provisioner
+      #  repo: nfs-ganesha
 
 application:
   manifests:
+    #- name: ca
+    #  dir: certificate-authority
+    #- name: bamboo
+    #  dir: bamboo
+    #- name: bamboo-agent
+    #  dir: bamboo-agent
+    #- name: bitbucket
+    #  dir: bitbucket
+    #- name: confluence
+    #  dir: confluence
+    #- name: crowd
+    #  dir: crowd
+    #- name: jira
+    #  dir: jira
 
   helm:
     repositories:
+      - name: atlassian
+        url: https://atlassian.github.io/data-center-helm-charts
 
     charts:
+      #- name: bamboo
+      #  repo: atlassian
+      #- name: bamboo-agent
+      #  repo: atlassian
+      #- name: bitbucket
+      #  repo: atlassian
+      #- name: confluence
+      #  repo: atlassian
+      #- name: crowd
+      #  repo: atlassian
+      #- name: jira
+      #  repo: atlassian

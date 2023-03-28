@@ -23,3 +23,16 @@ spec:
     - name: debug
       persistentVolumeClaim:
         claimName: debug
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: debug
+  namespace: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

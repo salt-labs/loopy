@@ -2,8 +2,11 @@
 authors = ["MAHDTech", "<MAHDTech@saltlabs.tech>"]
 name = "loopy"
 description = "Kubernetes packaging inner feedback loop."
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
+license-file = "LICENSE"
+homepage = "https://github.com/salt-labs/loopy"
+documentation = "https://github.com/salt-labs/loopy"
 
 [dependencies]
 anyhow = "1.0"

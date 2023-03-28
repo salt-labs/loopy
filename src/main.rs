@@ -174,13 +174,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("install") => {
             println!("Install mode activated...");
 
-            // Create the loopy namespace.
-            println!("Creating namespace: {}", PACKAGE_NAME);
-            let err_msg = format!("Failed to create namespace {}", PACKAGE_NAME);
-            kubectl_namespace("create", PACKAGE_NAME)
-                .await
-                .context(err_msg)?;
-
             // Install all Helm repositories (dependencies)
             for repo in &config_loaded.dependencies.helm.repositories {
                 println!("Adding Helm repository: {}", repo.name);
@@ -274,6 +267,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("Successfully installed Helm chart: {}", chart.name);
                 }
             }
+
+            // Create the loopy namespace.
+            println!("Creating namespace: {}", PACKAGE_NAME);
+            let err_msg = format!("Failed to create namespace {}", PACKAGE_NAME);
+            kubectl_namespace("create", PACKAGE_NAME)
+                .await
+                .context(err_msg)?;
         }
 
         Some("uninstall") => {

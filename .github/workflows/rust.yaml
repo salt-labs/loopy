@@ -131,6 +131,8 @@ jobs:
         name: Setup the Rust environment for Windows
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
         shell: powershell
+        env:
+          VCPKG_INSTALLED: ${{ github.workspace }}/vcpkg/installed/
         run: |
           git clone https://github.com/microsoft/vcpkg.git
           Push-Location -Path "vcpkg"
@@ -139,6 +141,7 @@ jobs:
           vcpkg.exe integrate install
           Pop-Location
           choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+          tree /F ${env:VCPKG_INSTALLED}
 
       - id: cargo_check
         name: Run Cargo check
@@ -179,7 +182,6 @@ jobs:
           RUSTFLAGS: "-Ctarget-feature=+crt-static"
           OPENSSL_DIR: ${{ github.workspace }}/vcpkg/installed/x64-windows-static
         run: |
-          tree /F ${OPENSSL_DIR}
           $env:LIB = "$env:VCPKG_ROOT\installed\x64-windows-static\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_ROOT\installed\x64-windows-static\include;$env:INCLUDE"
           cargo build --verbose

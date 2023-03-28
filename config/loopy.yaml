@@ -19,26 +19,33 @@ dependencies:
       bin: kind
       url: https://github.com/kubernetes-sigs/kind/releases/download/v0.17.0/kind-linux-amd64
 
+  # A list of manifests to apply to the cluster. Can be a local file or a URL.
+  # Manifests are applied before Helm Charts.
   manifests:
-    #- name: antrea
-    #  dir: antrea
+    - name: metallb
+      url: https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
+      dir: metallb
+    - name: antrea
+      dir: antrea
     # Ingress option A
-    #- name: contour
-    #  url: https://projectcontour.io/quickstart/contour.yaml
-    #  dir: contour
+    - name: contour
+      url: https://projectcontour.io/quickstart/contour.yaml
+      dir: contour
     # Ingress option B
     - name: contour-gateway
       url: https://projectcontour.io/quickstart/contour-gateway-provisioner.yaml
       dir: contour-gateway
-    - name: test
-      dir: test
-    #- name: cert-manager
-    #  dir: cert-manager
-    #- name: nfs-server-provisioner
-    #  dir: nfs-server-provisioner
+    - name: cert-manager
+      dir: cert-manager
+    - name: postgresql-ha
+      dir: postgresql-ha
+    - name: nfs-server-provisioner
+      dir: nfs-server-provisioner
 
   # Helm specific configuration
   helm:
+    # The helm repositories to add.
+    # The name must match the name of the repo in the chart.
     repositories:
       - name: bitnami
         url: https://charts.bitnami.com/bitnami
@@ -53,56 +60,59 @@ dependencies:
     charts:
       - name: cert-manager
         repo: bitnami
+        values: values-crds.yaml
       - name: contour
         repo: bitnami
       - name: postgresql-ha
         repo: bitnami
       - name: nfs-server-provisioner
         repo: nfs-ganesha
-      - name: ako
-        repo: ako
 
     # TODO: Finish Carvel implementation.
     #carvel:
 
-# Application specific configuration
+# Application specific configuration is applied after dependencies.
 application:
+  # A list of manifests to apply to the cluster. Can be a local file or a URL.
+  # Manifests are applied before Helm Charts.
   manifests:
+    - name: ca
+      dir: certificate-authority
     - name: bamboo
-      dir: atlassian-bamboo
+      dir: bamboo
     - name: bamboo-agent
-      dir: atlassian-bamboo-agent
+      dir: bamboo-agent
     - name: bitbucket
-      dir: atlassian-bitbucket
+      dir: bitbucket
     - name: confluence
-      dir: atlassian-confluence
+      dir: confluence
     - name: crowd
-      dir: atlassian-crowd
+      dir: crowd
     - name: jira
-      dir: atlassian-jira
+      dir: jira
 
+  # Helm specific configuration
   helm:
+    # The helm repositories to add.
+    # The repo name must match the name of the repo in the chart.
     repositories:
       - name: atlassian
         url: https://atlassian.github.io/data-center-helm-charts
 
-    # A list of helm chart to install.
+    # A list of helm charts to install.
     charts:
       - name: bamboo
         repo: atlassian
-        values: atlassian-bamboo
+      - name: bamboo-agent
+        repo: atlassian
       - name: bitbucket
         repo: atlassian
-        values: atlassian-bitbucket
       - name: confluence
         repo: atlassian
-        values: atlassian-confluence
       - name: crowd
         repo: atlassian
-        values: atlassian-crowd
       - name: jira
         repo: atlassian
-        values: atlassian-jira
 
     # TODO: Finish Carvel implementation.
     #carvel:

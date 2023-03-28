@@ -22,7 +22,7 @@
 
 use crate::fortune::show_fortune;
 use crate::helm::{helm_chart, helm_repo};
-use crate::kubectl::{kubectl_apply_manifest, kubectl_delete_manifest};
+use crate::kubectl::{kubectl_apply_manifest, kubectl_delete_manifest, kubectl_namespace};
 use crate::utils::{
     check_command_in_path, create_dir, download_tool, figlet, run_command, update_path,
 };
@@ -93,7 +93,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .as_ref()
         .and_then(|log| log.file.as_ref())
         .cloned();
-    let fortune_cookie_enabled = config_loaded
+    let fortune_enabled = config_loaded
         .log
         .as_ref()
         .and_then(|log| log.fortune.as_ref())
@@ -173,6 +173,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match action.as_deref() {
         Some("install") => {
             println!("Install mode activated...");
+
+            // Create the loopy namespace.
+            println!("Creating namespace: {}", PACKAGE_NAME);
+            let err_msg = format!("Failed to create namespace {}", PACKAGE_NAME);
+            kubectl_namespace("create", PACKAGE_NAME)
+                .await
+                .context(err_msg)?;
 
             // Install all Helm repositories (dependencies)
             for repo in &config_loaded.dependencies.helm.repositories {
@@ -339,6 +346,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     kubectl_delete_manifest(manifest).await.context(err_msg)?;
                 }
             }
+
+            // Delete the loopy namespace.
+            println!("Deleting namespace: {}", PACKAGE_NAME);
+            let err_msg = format!("Failed to delete namespace {}", PACKAGE_NAME);
+            kubectl_namespace("delete", PACKAGE_NAME)
+                .await
+                .context(err_msg)?;
         }
 
         None => {
@@ -359,13 +373,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     figlet(figlet_msg.as_str(), None, None, None);
     println!("{} has finished.", PACKAGE_NAME);
 
-    // If cookie is enabled, show the user a fortune cookie.
-    if &fortune_cookie_enabled.to_string() == "true" {
+    // If fortune is enabled, tell the user their fortune.
+    if &fortune_enabled.to_string() == "true" {
         println!(" ");
-        if let Some(fortune_cookie) = show_fortune() {
-            println!("Here is your fortune cookie for today: {}", fortune_cookie);
+        if let Some(fortune_message) = show_fortune() {
+            println!("Here is your fortune for today: {}", fortune_message);
         } else {
-            eprintln!("Failed to get fortune cookie");
+            eprintln!("Failed to get fortune message");
         }
         println!(" ");
     }

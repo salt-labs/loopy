@@ -30,7 +30,7 @@ spec:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: atlassian-system-privileged
+  name: antrea-system-privileged
 rules:
   - apiGroups:
       - policy
@@ -38,8 +38,7 @@ rules:
     resources:
       - podsecuritypolicies
     resourceNames:
-      - atlassian-system-privileged
-      - vmware-system-privileged
+      - antrea-system-privileged
     verbs:
       - use
 
@@ -47,19 +46,19 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: atlassian-system-privileged
-  namespace: confluence
+  name: antrea-system-privileged
+  namespace: antrea
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: atlassian-system-privileged
+  name: antrea-system-privileged
 subjects:
   - apiGroup: rbac.authorization.k8s.io
     kind: Group
     name: system:serviceaccounts
   - kind: ServiceAccount
     name: default
-    namespace: confluence
+    namespace: antrea
   - kind: ServiceAccount
-    name: confluence
-    namespace: confluence
+    name: antrea
+    namespace: antrea

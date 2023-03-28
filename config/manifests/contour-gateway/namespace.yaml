@@ -2,8 +2,8 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: contour
+  name: contour-gateway
   labels:
-    app: contour
+    app: contour-gateway
     vendor: vmware
     category: ingress

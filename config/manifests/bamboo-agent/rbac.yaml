@@ -3,7 +3,7 @@
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
-  name: atlassian-bamboo-system-privileged
+  name: bamboo-agent-system-privileged
 spec:
   privileged: true
   allowPrivilegeEscalation: true
@@ -30,7 +30,7 @@ spec:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: atlassian-bamboo-system-privileged
+  name: bamboo-agent-system-privileged
 rules:
   - apiGroups:
       - policy
@@ -39,6 +39,7 @@ rules:
       - podsecuritypolicies
     resourceNames:
       - atlassian-system-privileged
+      - vmware-system-privileged
     verbs:
       - use
 
@@ -46,19 +47,19 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: atlassian-bamboo-system-privileged
-  namespace: atlassian-bamboo
+  name: bamboo-agent-system-privileged
+  namespace: atlassian-bamboo-agent
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: atlassian-bamboo-system-privileged
+  name: bamboo-agent-system-privileged
 subjects:
   - apiGroup: rbac.authorization.k8s.io
     kind: Group
     name: system:serviceaccounts
   - kind: ServiceAccount
     name: default
-    namespace: atlassian-bamboo
+    namespace: atlassian-bamboo-agent
   - kind: ServiceAccount
-    name: bamboo
-    namespace: atlassian-bamboo
+    name: bamboo-agent
+    namespace: atlassian-bamboo-agent

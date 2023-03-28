@@ -283,12 +283,9 @@ fn helm_install_chart(
 
     // Check if the chart directory exists
     let chart_dir: String = format!("config/helm/{}", name);
-
     if !Path::new(&chart_dir).exists() {
-        return Err(anyhow::anyhow!(
-            "Helm chart directory '{}' does not exist. Please create the folder structure from the docs and try again.",
-            chart_dir
-        ));
+        info!("Helm chart directory does not exist, preparing chart");
+        helm_prepare_chart(name, repo)?;
     } else {
         debug!("Helm chart directory exists: {}", chart_dir);
     }
@@ -296,18 +293,26 @@ fn helm_install_chart(
     // Determine the values file to use.
     let values_file = if let Some(filename) = values_filename {
         let path = format!("{}/{}", chart_dir, filename);
+
         if !Path::new(&path).exists() {
             return Err(anyhow::anyhow!(
                 "Provided values file '{}' does not exist.",
                 path
             ));
+        } else {
+            debug!("Using values file: {}", path);
         }
         path
     } else {
         let default_path = format!("{}/values.yaml", chart_dir);
+        debug!("No values file provided, using default: {}", default_path);
+
         if !Path::new(&default_path).exists() {
+            // If the default values file doesn't exist, create it.
+            debug!("Default values file does not exist, creating one now for future modifications at: {}", default_path);
             helm_prepare_chart(name, repo)?;
         }
+
         default_path
     };
 
@@ -329,6 +334,7 @@ fn helm_install_chart(
                 &values_file,
                 "--namespace",
                 namespace,
+                "--wait",
                 &format!("{}/{}", repo, name),
             ],
         )
@@ -345,6 +351,7 @@ fn helm_install_chart(
                 "--namespace",
                 namespace,
                 "--create-namespace",
+                "--wait",
                 &format!("{}/{}", repo, name),
             ],
         )
@@ -389,7 +396,7 @@ fn helm_uninstall_chart(name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Prepare the given Helm chart by creating its directory and defaults.yaml file if they don't already exist
+/// Prepare the given Helm chart by creating its directory and values.yaml file if they don't already exist
 ///
 /// # Arguments
 ///
@@ -408,15 +415,17 @@ fn helm_prepare_chart(name: &str, repo: &str) -> Result<()> {
     info!("Preparing Helm chart: {}", name);
 
     // Create the chart directory if it doesn't exist
-    let chart_dir = format!("helm/charts/{}", name);
+    let chart_dir: String = format!("config/helm/{}", name);
     if !Path::new(&chart_dir).exists() {
-        std::fs::create_dir_all(&chart_dir)
-            .with_context(|| format!("Failed to create Helm chart directory '{}'", chart_dir))?;
+        info!("Creating Helm chart directory: {}", chart_dir);
+        let err_msg = format!("Failed to create Helm chart directory '{}'", chart_dir);
+        std::fs::create_dir_all(&chart_dir).context(err_msg)?;
     }
 
-    // Create the defaults.yaml file if it doesn't exist
-    let defaults_file = format!("{}/defaults.yaml", chart_dir);
+    // Create the values.yaml file if it doesn't exist
+    let defaults_file = format!("{}/values.yaml", chart_dir);
     if !Path::new(&defaults_file).exists() {
+        info!("Creating Helm chart defaults file: {}", defaults_file);
         let (stdout, stderr, status) =
             run_command("helm", &["show", "values", &format!("{}/{}", repo, name)])?;
 
@@ -426,15 +435,16 @@ fn helm_prepare_chart(name: &str, repo: &str) -> Result<()> {
             return Err(anyhow::anyhow!(error_msg));
         }
 
-        let mut file = File::create(&defaults_file).with_context(|| {
-            format!("Failed to create defaults.yaml file at '{}'", defaults_file)
-        })?;
-        file.write_all(stdout.as_bytes()).with_context(|| {
-            format!(
-                "Failed to write to defaults.yaml file at '{}'",
-                defaults_file
-            )
-        })?;
+        let err_msg = format!(
+            "Failed to create Helm chart defaults file '{}'",
+            defaults_file
+        );
+        let mut file = File::create(&defaults_file).context(err_msg)?;
+        let err_msg = format!(
+            "Failed to write to Helm chart defaults file '{}'",
+            defaults_file
+        );
+        file.write_all(stdout.as_bytes()).context(err_msg)?;
     }
 
     Ok(())

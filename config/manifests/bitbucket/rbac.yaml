@@ -3,7 +3,7 @@
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
-  name: atlassian-crowd-system-privileged
+  name: bitbucket-system-privileged
 spec:
   privileged: true
   allowPrivilegeEscalation: true
@@ -30,7 +30,7 @@ spec:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: atlassian-crowd-system-privileged
+  name: bitbucket-system-privileged
 rules:
   - apiGroups:
       - policy
@@ -47,19 +47,19 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: atlassian-crowdsystem-privileged
-  namespace: atlassian-crowd
+  name: bitbucket-system-privileged
+  namespace: atlassian-bitbucket
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: atlassian-crowd-system-privileged
+  name: bitbucket-system-privileged
 subjects:
   - apiGroup: rbac.authorization.k8s.io
     kind: Group
     name: system:serviceaccounts
   - kind: ServiceAccount
     name: default
-    namespace: atlassian-crowd
+    namespace: atlassian-bitbucket
   - kind: ServiceAccount
-    name: crowd
-    namespace: atlassian-crowd
+    name: bitbucket
+    namespace: atlassian-bitbucket

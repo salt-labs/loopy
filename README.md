@@ -4,7 +4,7 @@
 
 A Kubernetes packaging helper utility that tries to prevent you from going [loopy](https://www.urbandictionary.com/define.php?term=Loopy).
 
-It's useful for those times when you find yourself testing the same inner-feedback loop like repeatedly installing and upgrading the same set of Helm charts on a `kind` cluster for a one line change.
+It's useful for those times when you find yourself testing the same [inner loop](https://tanzu.vmware.com/developer/tv/talk/118/) like repeatedly installing and upgrading the same set of Helm charts on a `kind` cluster after only a couple lines of changes to a values file.
 
 ![loopy](./docs/images/loopy.gif)
 
@@ -60,7 +60,13 @@ loopy --help
 - When ready, run `loopy`
 
 ```bash
-loopy --config loopy.yaml
+loopy --config loopy.yaml --action install
+```
+
+- When finished, run `loopy` again to clean up.
+
+```bash
+loopy --config loopy.yaml --action uninstall
 ```
 
 ## Dependencies

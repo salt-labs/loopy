@@ -763,7 +763,7 @@ if [[ ${ENABLE_ATLASSIAN_HELM_CHARTS} == "true" ]]; then
 		install_helm_release \
 			"${chart_name}" \
 			"${chart_repo}/${chart_name}" \
-			"atlassian-${chart_name}" \
+			"${chart_name}" \
 			"${chart_values}" || {
 			message "Failed to install ${chart_name}."
 			exit 10

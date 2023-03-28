@@ -2,8 +2,8 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: cert-manager
+  name: certificate-authority
   labels:
-    app: cert-manager
-    vendor: jetstack
+    app: certificate-authority
+    vendor: salt-labs
     category: certificate-management

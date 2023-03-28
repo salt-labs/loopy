@@ -3,11 +3,18 @@
 //! This module contains functions for interacting with Kubernetes using the kubectl CLI.
 //!
 
+use crate::PACKAGE_NAME;
 use crate::{config::Manifests, utils::run_command};
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
+use k8s_openapi::api::core::v1::{Namespace, NamespaceSpec};
+use kube::api::ObjectMeta;
+use kube::api::{DeleteParams, ListParams, PatchParams};
+use kube::{api::Api, Client};
 use log::{debug, error, info, warn};
+use serde_json::json;
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 
 /// Kubectl apply or delete a URL.
@@ -103,7 +110,7 @@ async fn kubectl_url(action: &str, url: &str, dry_run: bool) -> Result<()> {
 /// assert!(result.is_ok());
 /// ```
 ///
-fn kubectl_manifests(
+async fn kubectl_manifests(
     action: &str,
     name: &str,
     filename: Option<&str>,
@@ -132,6 +139,7 @@ fn kubectl_manifests(
             action, manifest_dir
         );
 
+        // Recursively collect all files through directories.
         let entries: Vec<_> = std::fs::read_dir(&manifest_dir)?
             .map(|entry| entry.map(|e| e.path()))
             .collect::<Result<_, _>>()?;
@@ -169,15 +177,26 @@ fn kubectl_manifests(
             }
         }
 
-        // TODO: Fix more jankiness
-        // Even more jankiness. Need to sleep in between applying the CRDs
-        // and the rest of the manifests. Otherwise, the CRDs are not
-        // available when the rest of the manifests are applied.
-        let wait_time = 60;
-        if action == "apply" {
-            println!("Waiting for CRDs to be available...");
-            info!("Waiting {} seconds for CRDs to be available...", wait_time);
-            std::thread::sleep(std::time::Duration::from_secs(wait_time));
+        // If this isn't the first time loopy has run, a namespace will already exist.
+        let err_msg = format!("Failed to check if namespace {} exists", PACKAGE_NAME);
+        let namespace_exists = kubectl_namespace_check(PACKAGE_NAME)
+            .await
+            .context(err_msg)?;
+
+        if namespace_exists {
+            debug!("Namespace {} already exists", PACKAGE_NAME);
+        } else {
+            debug!("Namespace {} does not exist", PACKAGE_NAME);
+            // TODO: Fix more jankiness
+            // Even more jankiness. Need to sleep in between applying the CRDs
+            // and the rest of the manifests. Otherwise, the CRDs are not
+            // available when the rest of the manifests are applied.
+            let wait_time = 60;
+            if action == "apply" {
+                println!("Waiting for CRDs to be available...");
+                info!("Waiting {} seconds for CRDs to be available...", wait_time);
+                std::thread::sleep(std::time::Duration::from_secs(wait_time));
+            }
         }
 
         // Apply or delete the rest of the manifest files in the original order.
@@ -207,6 +226,7 @@ fn kubectl_manifests(
 /// * `action` - The action to perform, either "apply" or "delete"
 /// * `priorities` - A list of manifest filenames to prioritize, in the order they should be applied
 ///
+/// TODO: Get this working. Currently, it's not sorting the files correctly.
 fn _sort_manifest_files(
     entries: &mut [PathBuf],
     action: &str,
@@ -389,7 +409,9 @@ pub async fn kubectl_apply_manifest(manifest: &Manifests) -> Result<()> {
                 manifest.name, dir
             );
             // action, name, filename, dry_run
-            kubectl_manifests("apply", dir, None, false).context(err_msg)?;
+            kubectl_manifests("apply", dir, None, false)
+                .await
+                .context(err_msg)?;
             println!(
                 "Successfully applied Kubernetes manifests {} using directory {}",
                 manifest.name, dir
@@ -450,7 +472,9 @@ pub async fn kubectl_delete_manifest(manifest: &Manifests) -> Result<()> {
                 "Failed to remove Kubernetes manifests {} using directory {}",
                 manifest.name, dir
             );
-            kubectl_manifests("delete", dir, None, false).context(err_msg)?;
+            kubectl_manifests("delete", dir, None, false)
+                .await
+                .context(err_msg)?;
             println!(
                 "Successfully removed Kubernetes manifests {} using directory {}",
                 manifest.name, dir
@@ -465,4 +489,195 @@ pub async fn kubectl_delete_manifest(manifest: &Manifests) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Manage Kubernetes Namespaces.
+///
+/// # Arguments
+///
+/// * `action` - The action to perform. Can be either 'create', 'delete'.
+/// * `name` - The name of the namespace.
+///
+pub async fn kubectl_namespace(action: &str, name: &str) -> Result<()> {
+    match action {
+        "create" => {
+            let err_msg = format!("Failed to create namespace {}", name);
+            kubectl_namespace_create(name).await.context(err_msg)?;
+            Ok(())
+        }
+
+        "delete" => {
+            let err_msg = format!("Failed to delete namespace {}", name);
+            kubectl_namespace_delete(name).await.context(err_msg)?;
+            Ok(())
+        }
+
+        _ => Err(anyhow::anyhow!(
+            "Invalid action, only 'create', 'delete' are allowed"
+        )),
+    }
+}
+
+/// Create a namespace.
+///
+/// Creates a namespace.
+/// Returns an error if the creation fails.
+///
+/// # Arguments
+///
+/// * `name` - The name of the namespace to create
+///
+/// # Examples
+///
+/// ```rust
+/// use loopy::kubectl::namespace_create;
+/// let result = namespace_create("test");
+/// assert!(result.is_ok());
+/// ```
+///
+pub async fn kubectl_namespace_create(name: &str) -> Result<()> {
+    info!("Creating or updating namespace {}", name);
+
+    let client = Client::try_default().await?;
+
+    let namespaces: Api<Namespace> = Api::all(client);
+    let namespace_exists = kubectl_namespace_check(name).await?;
+
+    let mut labels = BTreeMap::new();
+    labels.insert("app".to_owned(), "loopy".to_owned());
+    labels.insert("vendor".to_owned(), "salt-labs".to_owned());
+    labels.insert("category".to_owned(), "utilities".to_owned());
+
+    let namespace_spec = NamespaceSpec::default();
+
+    let namespace = Namespace {
+        metadata: ObjectMeta {
+            name: Some(name.to_owned()),
+            labels: Some(labels.clone()),
+            ..Default::default()
+        },
+        spec: Some(namespace_spec),
+        ..Default::default()
+    };
+
+    if namespace_exists {
+        info!("Namespace {} already exists, updating", name);
+
+        let patch = json!({
+            "metadata": {
+                "labels": labels
+            }
+        });
+
+        match namespaces
+            .patch(
+                name,
+                &PatchParams::apply(""),
+                &kube::api::Patch::Strategic(patch),
+            )
+            .await
+        {
+            Ok(updated_namespace) => {
+                info!(
+                    "The namespace {} was updated successfully",
+                    updated_namespace.metadata.name.unwrap()
+                );
+                Ok(())
+            }
+            Err(e) => Err(anyhow!("Failed to update namespace: {}", e)),
+        }
+    } else {
+        match namespaces
+            .create(&kube::api::PostParams::default(), &namespace)
+            .await
+        {
+            Ok(created_namespace) => {
+                info!(
+                    "The namespace {} was created successfully",
+                    created_namespace.metadata.name.unwrap()
+                );
+                Ok(())
+            }
+            Err(e) => Err(anyhow!("Failed to create namespace: {}", e)),
+        }
+    }
+}
+
+/// Check if Namespace exists.
+///
+/// Checks if a namespace exists.
+/// Returns true if it does, false if it doesn't.
+/// Returns an error if the check fails.
+///
+/// # Arguments
+///
+/// * `name` - The name of the namespace to check
+///
+/// # Examples
+///
+/// ```rust
+/// use loopy::kubectl::namespace_exists;
+/// let result = namespace_exists("test");
+/// assert!(result.is_ok());
+/// ```
+///
+pub async fn kubectl_namespace_check(name: &str) -> Result<bool> {
+    info!("Checking if namespace {} exists", name);
+
+    let client = Client::try_default().await?;
+
+    let namespaces: Api<Namespace> = Api::all(client);
+
+    let list_params = ListParams::default().fields(format!("metadata.name={}", name).as_str());
+
+    let ns_list = namespaces.list(&list_params).await?;
+
+    let ns_names: Vec<String> = ns_list
+        .iter()
+        .filter_map(|ns| ns.metadata.name.as_deref().map(|n| n.to_owned()))
+        .collect();
+
+    Ok(ns_names.contains(&name.to_owned()))
+}
+
+/// Delete a namespace.
+///
+/// Deletes a namespace.
+/// Returns an error if the deletion fails.
+///
+/// # Arguments
+///
+/// * `name` - The name of the namespace to delete
+///
+/// # Examples
+///
+/// ```rust
+/// use loopy::kubectl::namespace_delete;
+/// let result = namespace_delete("test");
+/// assert!(result.is_ok());
+/// ```
+///
+pub async fn kubectl_namespace_delete(name: &str) -> Result<()> {
+    info!("Deleting namespace {}", name);
+
+    let client = Client::try_default().await?;
+
+    let namespaces: Api<Namespace> = Api::all(client);
+    let namespace_exists = kubectl_namespace_check(name).await?;
+
+    if namespace_exists {
+        info!("Namespace {} exists, deleting", name);
+
+        match namespaces.delete(name, &DeleteParams::default()).await {
+            Ok(_) => {
+                info!("Namespace {} deleted successfully", name);
+                Ok(())
+            }
+
+            Err(e) => Err(anyhow!("Failed to delete namespace: {}", e)),
+        }
+    } else {
+        info!("Namespace {} does not exist, skipping", name);
+        Ok(())
+    }
 }

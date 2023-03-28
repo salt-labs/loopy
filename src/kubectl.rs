@@ -185,10 +185,10 @@ async fn kubectl_manifests(
 
         let wait_time = if namespace_exists {
             debug!("Namespace {} already exists", PACKAGE_NAME);
-            30
+            10
         } else {
             debug!("Namespace {} does not exist", PACKAGE_NAME);
-            300
+            60
         };
 
         // TODO: Fix more jankiness

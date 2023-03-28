@@ -158,13 +158,13 @@ jobs:
         shell: powershell
         env:
           VCPKGRS_DYNAMIC: "1"
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
           VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
-          VCPKG_INSTALLED: ${{ github.workspace }}/vcpkg/installed/
+          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
           RUSTFLAGS: "-Ctarget-feature=+crt-static"
-          OPENSSL_DIR: ${{ github.workspace }}/vcpkg/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}
-          OPENSSL_LIB_DIR: ${{ github.workspace }}/vcpkg/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}/lib
-          OPENSSL_INCLUDE_DIR: ${{ github.workspace }}/vcpkg/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}/include
+          OPENSSL_DIR: ${{ env.VCPKG_INSTALLED }}\${{ env.VCPKG_DEFAULT_TRIPLET }}
+          OPENSSL_LIB_DIR: ${{ env.VCPKG_INSTALLED }}\${{ env.VCPKG_DEFAULT_TRIPLET }}\lib
+          OPENSSL_INCLUDE_DIR: ${{ env.VCPKG_INSTALLED }}\${{ env.VCPKG_DEFAULT_TRIPLET }}\include
         run: |
           $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
@@ -200,13 +200,13 @@ jobs:
         shell: powershell
         env:
           VCPKGRS_DYNAMIC: "1"
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
           VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
-          VCPKG_INSTALLED: ${{ github.workspace }}/vcpkg/installed/
+          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
           RUSTFLAGS: "-Ctarget-feature=+crt-static"
-          OPENSSL_DIR: ${{ github.workspace }}/vcpkg/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}
-          OPENSSL_LIB_DIR: ${{ github.workspace }}/vcpkg/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}/lib
-          OPENSSL_INCLUDE_DIR: ${{ github.workspace }}/vcpkg/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}/include
+          OPENSSL_DIR: ${{ env.VCPKG_INSTALLED }}\${{ env.VCPKG_DEFAULT_TRIPLET }}
+          OPENSSL_LIB_DIR: ${{ env.VCPKG_INSTALLED }}\${{ env.VCPKG_DEFAULT_TRIPLET }}\lib
+          OPENSSL_INCLUDE_DIR: ${{ env.VCPKG_INSTALLED }}\${{ env.VCPKG_DEFAULT_TRIPLET }}\include
         run: |
           $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
@@ -225,13 +225,13 @@ jobs:
         shell: powershell
         env:
           VCPKGRS_DYNAMIC: "1"
-          VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
           VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
-          VCPKG_INSTALLED: ${{ github.workspace }}/vcpkg/installed/
+          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
           RUSTFLAGS: "-Ctarget-feature=+crt-static"
-          OPENSSL_DIR: ${{ github.workspace }}/vcpkg/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}
-          OPENSSL_LIB_DIR: ${{ github.workspace }}/vcpkg/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}/lib
-          OPENSSL_INCLUDE_DIR: ${{ github.workspace }}/vcpkg/installed/${{ env.VCPKG_DEFAULT_TRIPLET }}/include
+          OPENSSL_DIR: ${{ env.VCPKG_INSTALLED }}\${{ env.VCPKG_DEFAULT_TRIPLET }}
+          OPENSSL_LIB_DIR: ${{ env.VCPKG_INSTALLED }}\${{ env.VCPKG_DEFAULT_TRIPLET }}\lib
+          OPENSSL_INCLUDE_DIR: ${{ env.VCPKG_INSTALLED }}\${{ env.VCPKG_DEFAULT_TRIPLET }}\include
         run: |
           $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"

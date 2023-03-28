@@ -20,8 +20,9 @@
 //! by running ```loopy --help```.
 //!
 
-use crate::helm::{helm_uninstall_chart, helm_uninstall_repo};
-use crate::kubectl::kubectl_delete_manifest;
+use crate::fortune::show_fortune;
+use crate::helm::{helm_chart, helm_repo};
+use crate::kubectl::{kubectl_apply_manifest, kubectl_delete_manifest};
 use crate::utils::{
     check_command_in_path, create_dir, download_tool, figlet, run_command, update_path,
 };
@@ -30,11 +31,11 @@ use log::{debug, info, warn, LevelFilter};
 use std::env;
 use std::io;
 use std::path::PathBuf;
-
 use std::str::FromStr;
 
 mod args;
 mod config;
+mod fortune;
 mod helm;
 mod kubectl;
 mod logger;
@@ -92,6 +93,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .as_ref()
         .and_then(|log| log.file.as_ref())
         .cloned();
+    let fortune_cookie_enabled = config_loaded
+        .log
+        .as_ref()
+        .and_then(|log| log.fortune.as_ref())
+        .unwrap_or(&false);
     logger::setup_logging(log_level, log_file)?;
 
     info!("Logging initialized with level: {:?}", log_level);
@@ -168,85 +174,99 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("install") => {
             println!("Install mode activated...");
 
-            /*
             // Install all Helm repositories (dependencies)
-            for repo in &config.dependencies.helm.repositories {
+            for repo in &config_loaded.dependencies.helm.repositories {
                 println!("Adding Helm repository: {}", repo.name);
-                helm_install_repo(repo.name, repo.url)
-                    .with_context(|| format!("Failed to add Helm repository {}", repo.name))?;
+                let err_msg = format!("Failed to add Helm repository {}", repo.name);
+                helm_repo("install", Some(&repo.name), Some(&repo.url))
+                    .await
+                    .context(err_msg)?;
+                println!("Successfully added Helm repository: {}", repo.name);
             }
 
             // Install all Helm repositories (applications)
-            for repo in &config.application.helm.repositories {
+            for repo in &config_loaded.application.helm.repositories {
                 println!("Adding Helm repository: {}", repo.name);
-                helm_install_repo(repo.name, repo.url)
-                    .with_context(|| format!("Failed to add Helm repository {}", repo.name))?;
+                let err_msg = format!("Failed to add Helm repository {}", repo.name);
+                helm_repo("install", Some(&repo.name), Some(&repo.url))
+                    .await
+                    .context(err_msg)?;
+                println!("Successfully added Helm repository: {}", repo.name);
             }
 
             // Update all Helm repositories.
             println!("Updating Helm repositories...");
-            helm_update_repos().with_context(|| format!("Failed to update Helm repositories"))?;
+            let err_msg = "Failed to update Helm repositories".to_string();
+            helm_repo("update", None, None).await.context(err_msg)?;
+            println!("Successfully updated Helm repositories");
 
-            // Install Kubernetes Namespace and RBAC manifests (dependencies)
-            for chart in &config.dependencies.helm.charts {
-                println!("Installing Kubernetes Namespace: {}", chart.name);
-                kubectl_apply_file(chart.name, "namespace.yaml").with_context(|| {
-                    format!(
-                        "Failed to install Kubernetes Namespace manifest {}",
-                        chart.name
-                    )
-                })?;
-                println!("Installing Kubernetes RBAC: {}", chart.name);
-                kubectl_apply_file(chart.name, "rbac.yaml").with_context(|| {
-                    format!("Failed to install Kubernetes RBAC manifest {}", chart.name)
-                })?;
+            // Install all Manifests (dependencies)
+            if config_loaded.dependencies.manifests.is_empty() {
+                println!(
+                    "No Kubernetes dependency manifests were found in the configuration file. Skipping..."
+                );
+            } else {
+                for manifest in &config_loaded.dependencies.manifests {
+                    println!("Installing Kubernetes manifests for: {}", manifest.name);
+                    let err_msg = format!(
+                        "Failed to install Kubernetes manifests for {}",
+                        manifest.name
+                    );
+                    kubectl_apply_manifest(manifest).await.context(err_msg)?;
+                    println!(
+                        "Successfully installed Kubernetes manifest: {}",
+                        manifest.name
+                    );
+                }
             }
 
-            // Install Kubernetes Namespace and RBAC manifests (applications)
-            for chart in &config.application.helm.charts {
-                println!("Installing Kubernetes Namespace: {}", chart.name);
-                kubectl_apply_file(chart.name, "namespace.yaml").with_context(|| {
-                    format!(
-                        "Failed to install Kubernetes Namespace manifest {}",
-                        chart.name
-                    )
-                })?;
-                println!("Installing Kubernetes RBAC: {}", chart.name);
-                kubectl_apply_file(chart.name, "rbac.yaml").with_context(|| {
-                    format!("Failed to install Kubernetes RBAC manifest {}", chart.name)
-                })?;
+            // Install all Helm charts (dependencies)
+            if config_loaded.dependencies.helm.charts.is_empty() {
+                println!(
+                    "No Helm chart dependencies were found in the configuration file. Skipping..."
+                );
+            } else {
+                for chart in &config_loaded.dependencies.helm.charts {
+                    println!("Installing Helm chart: {}", chart.name);
+                    let err_msg = format!("Failed to install Helm chart {}", chart.name);
+                    helm_chart("install", chart).context(err_msg)?;
+                    println!("Successfully installed Helm chart: {}", chart.name);
+                }
             }
 
-            // Install all Helm charts as releases (dependencies)
-            for chart in &config.dependencies.helm.charts {
-                println!("Installing Helm chart: {}", chart.name);
-                helm_install_chart(chart.name, chart.repo)
-                    .with_context(|| format!("Failed to install Helm chart {}", chart.name))?;
+            // Install all Manifests (applications)
+            if config_loaded.application.manifests.is_empty() {
+                println!(
+                    "No Kubernetes application manifests were found in the configuration file. Skipping..."
+                );
+            } else {
+                for manifest in &config_loaded.application.manifests {
+                    println!("Installing Kubernetes manifests for: {}", manifest.name);
+                    let err_msg = format!(
+                        "Failed to install Kubernetes manifests for {}",
+                        manifest.name
+                    );
+                    kubectl_apply_manifest(manifest).await.context(err_msg)?;
+                    println!(
+                        "Successfully installed Kubernetes manifest: {}",
+                        manifest.name
+                    );
+                }
             }
 
-            // Install all other Kubernetes manifests (dependencies)
-            for chart in &config.dependencies.helm.charts {
-                println!("Installing Kubernetes manifests: {}", chart.name);
-                kubectl_apply_dir(chart.name).with_context(|| {
-                    format!("Failed to install Kubernetes manifests {}", chart.name)
-                })?;
+            // Install all Helm charts (applications)
+            if config_loaded.application.helm.charts.is_empty() {
+                println!(
+                    "No Helm chart applications were found in the configuration file. Skipping..."
+                );
+            } else {
+                for chart in &config_loaded.application.helm.charts {
+                    println!("Installing Helm chart: {}", chart.name);
+                    let err_msg = format!("Failed to install Helm chart {}", chart.name);
+                    helm_chart("install", chart).context(err_msg)?;
+                    println!("Successfully installed Helm chart: {}", chart.name);
+                }
             }
-
-            // Install all Helm charts as releases (applications)
-            for chart in &config.application.helm.charts {
-                println!("Installing Helm chart: {}", chart.name);
-                helm_install_chart(chart.name, chart.repo)
-                    .with_context(|| format!("Failed to install Helm chart {}", chart.name))?;
-            }
-
-            // Install all other Kubernetes manifests (applications)
-            for chart in &config.application.helm.charts {
-                println!("Installing Kubernetes manifests: {}", chart.name);
-                kubectl_apply_dir(chart.name).with_context(|| {
-                    format!("Failed to install Kubernetes manifests {}", chart.name)
-                })?;
-            }
-            */
         }
 
         Some("uninstall") => {
@@ -256,7 +276,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             for chart in &config_loaded.application.helm.charts {
                 println!("Uninstalling Helm chart: {}", chart.name);
                 let err_msg = format!("Failed to uninstall Helm chart {}", chart.name);
-                helm_uninstall_chart(&chart.name).context(err_msg)?;
+                helm_chart("uninstall", chart).context(err_msg)?;
                 println!("Successfully uninstalled Helm chart: {}", chart.name);
             }
 
@@ -264,7 +284,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             for chart in &config_loaded.dependencies.helm.charts {
                 println!("Uninstalling Helm chart: {}", chart.name);
                 let err_msg = format!("Failed to uninstall Helm chart {}", chart.name);
-                helm_uninstall_chart(&chart.name).context(err_msg)?;
+                helm_chart("uninstall", chart).context(err_msg)?;
                 println!("Successfully uninstalled Helm chart: {}", chart.name);
             }
 
@@ -272,7 +292,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             for repo in &config_loaded.application.helm.repositories {
                 println!("Removing Helm repository: {}", repo.name);
                 let err_msg = format!("Failed to remove Helm repository {}", repo.name);
-                helm_uninstall_repo(&repo.name).context(err_msg)?;
+                helm_repo("uninstall", Some(&repo.name), None)
+                    .await
+                    .context(err_msg)?;
                 println!("Successfully removed Helm repository: {}", repo.name);
             }
 
@@ -280,7 +302,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             for repo in &config_loaded.dependencies.helm.repositories {
                 println!("Removing Helm repository: {}", repo.name);
                 let err_msg = format!("Failed to remove Helm repository {}", repo.name);
-                helm_uninstall_repo(&repo.name).context(err_msg)?;
+                helm_repo("uninstall", Some(&repo.name), None)
+                    .await
+                    .context(err_msg)?;
                 println!("Successfully removed Helm repository: {}", repo.name);
             }
 
@@ -318,7 +342,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         None => {
-            println!("No action was specified, nothing to do. See '--help' for usage information. Have a nice day! :)");
+            println!("No action was specified, nothing to do. See '--help' for usage information.");
             std::process::exit(0);
         }
 
@@ -328,15 +352,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    println!(
-        "The {} action completed successfully. Have a nice day! :)",
-        action.unwrap()
-    );
+    println!("The {} action completed successfully.", action.unwrap());
 
     // Let's end the loop.
     let figlet_msg: String = "end".to_string();
     figlet(figlet_msg.as_str(), None, None, None);
     println!("{} has finished.", PACKAGE_NAME);
+
+    // If cookie is enabled, show the user a fortune cookie.
+    if &fortune_cookie_enabled.to_string() == "true" {
+        println!(" ");
+        if let Some(fortune_cookie) = show_fortune() {
+            println!("Here is your fortune cookie for today: {}", fortune_cookie);
+        } else {
+            eprintln!("Failed to get fortune cookie");
+        }
+        println!(" ");
+    }
 
     Ok(())
 }

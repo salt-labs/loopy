@@ -8,7 +8,6 @@ use chrono::Local;
 use colored::*;
 use log::Level;
 use log::LevelFilter;
-use std::io;
 
 /// Sets up logging.
 ///
@@ -46,9 +45,11 @@ pub fn setup_logging(
     }
 
     // If the log level is debug, log to stdout as well.
+    /*
     if log_level == LevelFilter::Debug {
         base_config = base_config.chain(io::stdout());
     }
+    */
 
     // Apply the configuration to the logger.
     base_config.apply()?;

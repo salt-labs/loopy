@@ -33,6 +33,7 @@ tokio = { version = "1", features = ["full"] }
 vcpkg = "0.2.15"
 which = "4.2.1"
 zip = "0.6.4"
+rand = "0.8"
 
 [build-dependencies]
 serde = "1.0"

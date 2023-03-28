@@ -9,6 +9,7 @@ use serde::Deserialize;
 use std::fs;
 use std::path::Path;
 
+/// Main configuration structure.
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub log: Option<Log>,
@@ -16,12 +17,19 @@ pub struct Config {
     pub application: Application,
 }
 
+/// Log configuration structure.
 #[derive(Debug, Deserialize)]
 pub struct Log {
+    /// Logging level (e.g., "info", "warn", "error").
     pub level: Option<String>,
+    /// Optional log file path.
     pub file: Option<String>,
+    /// Boolean to enable or disable showing a fortune cookie.
+    /// Defaults to false.
+    pub fortune: Option<bool>,
 }
 
+/// Dependencies configuration structure.
 #[derive(Debug, Deserialize)]
 pub struct Dependencies {
     //pub carvel: Carvel,
@@ -30,6 +38,7 @@ pub struct Dependencies {
     pub tools: Vec<Tool>,
 }
 
+/// Application configuration structure.
 #[derive(Debug, Deserialize)]
 pub struct Application {
     //pub carvel: Carvel,
@@ -37,48 +46,75 @@ pub struct Application {
     pub manifests: Vec<Manifests>,
 }
 
+/// Tool configuration structure.
 #[derive(Debug, Deserialize)]
 pub struct Tool {
+    /// Tool name.
     pub name: String,
+    /// Tool binary name.
     pub bin: String,
+    /// Optional tool URL.
     pub url: Option<String>,
 }
 
+/// Manifests configuration structure.
 #[derive(Debug, Deserialize)]
 pub struct Manifests {
+    /// Manifest name.
     pub name: String,
+    /// Optional manifest URL.
     pub url: Option<String>,
+    /// Optional manifest directory.
     pub dir: Option<String>,
 }
 
+/// Carvel configuration structure.
 #[derive(Debug, Deserialize)]
 pub struct Carvel {
     pub packages: Vec<Package>,
 }
 
+/// Package configuration structure for Carvel.
 #[derive(Debug, Deserialize)]
 pub struct Package {
+    /// Package name.
     pub name: String,
+    /// Package version.
     pub version: String,
+    /// Optional values file for the package.
     pub values: Option<String>,
 }
 
+/// Helm configuration structure.
 #[derive(Debug, Deserialize)]
 pub struct Helm {
     pub repositories: Vec<Repository>,
     pub charts: Vec<Chart>,
 }
 
+/// Repository configuration structure for Helm.
 #[derive(Debug, Deserialize)]
 pub struct Repository {
+    /// Repository name.
     pub name: String,
+    /// Repository URL.
     pub url: String,
 }
 
+/// Chart configuration structure for Helm.
 #[derive(Debug, Deserialize)]
 pub struct Chart {
+    /// The name of the Helm release.
     pub name: String,
+    /// The Helm repository where the chart is located.
     pub repo: String,
+    /// The Kubernetes namespace in which to deploy the Helm release.
+    /// If not provided, defaults to the Helm release name.
+    #[serde(default)]
+    pub namespace: Option<String>,
+    /// The optional name of the values file to use.
+    /// If not provided, the default "values.yaml" file is used.
+    #[serde(default)]
     pub values: Option<String>,
 }
 

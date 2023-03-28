@@ -3,15 +3,60 @@
 //! This module contains functions for installing and uninstalling Helm charts and repositories.
 //!
 
+use crate::config::Chart;
 use crate::utils::run_command;
 
 use anyhow::{Context, Result};
-use log::{debug, info};
-//use std::fs::File;
-//use std::io::Write;
-//use std::path::Path;
+use log::{debug, error, info};
+use reqwest::StatusCode;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 
-/*
+/// Manage helm repositories.
+///
+/// # Arguments
+///
+/// * `action` - The action to perform. Can be either 'install', 'uninstall' or 'update.'
+/// * `name` - The name of the Helm repository.
+/// * `url` - The URL of the Helm repository.
+///
+pub async fn helm_repo(action: &str, name: Option<&str>, url: Option<&str>) -> Result<()> {
+    match action {
+        "install" => {
+            if let Some(repo_name) = name {
+                if let Some(repo_url) = url {
+                    helm_install_repo(repo_name, repo_url).await
+                } else {
+                    Err(anyhow::anyhow!(
+                        "URL is required for installing a Helm repo"
+                    ))
+                }
+            } else {
+                Err(anyhow::anyhow!(
+                    "Name is required for installing a Helm repo"
+                ))
+            }
+        }
+
+        "uninstall" => {
+            if let Some(repo_name) = name {
+                helm_uninstall_repo(repo_name)
+            } else {
+                Err(anyhow::anyhow!(
+                    "Name is required for uninstalling a Helm repo"
+                ))
+            }
+        }
+
+        "update" => helm_update_repos(),
+
+        _ => Err(anyhow::anyhow!(
+            "Invalid action, only 'install', 'uninstall', or 'update' are allowed"
+        )),
+    }
+}
+
 /// Install the given Helm repository if it doesn't already exist
 ///
 /// # Arguments
@@ -23,58 +68,79 @@ use log::{debug, info};
 ///
 /// ```rust
 /// use loopy::helm::helm_install_repo;
-///
-/// fn main() {
-///     let result = helm_install_repo("example", "https://charts.example.com");
-///     assert!(result.is_ok());
-/// }
+/// let result = helm_install_repo("example", "https://charts.example.com");
+/// assert!(result.is_ok());
 /// ```
 ///
-pub fn helm_install_repo(name: &str, url: &str) -> Result<()> {
+async fn helm_install_repo(name: &str, url: &str) -> Result<()> {
     info!("Installing Helm repo: {}", name);
 
     // Check if the helm repo already exists
-    let (stdout, stderr, status) = run_command("helm", &["repo", "list"])?;
+    let err_msg = "Failed to list Helm repositories".to_string();
+    let (stdout, stderr, status) = run_command("helm", &["repo", "list"]).expect(&err_msg);
 
-    // Handle the error condition first.
-    if status.code() != Some(0) {
-        let error_msg = format!("Failed to list Helm repositories: {}", stderr);
-        return Err(anyhow::anyhow!(error_msg));
-    } else if !stdout.contains(name) {
-        // If the helm repo doesn't currently exist, add it.
-        debug!("Adding Helm repo: {}", name);
-        let err_msg = format!("Failed to add Helm repository '{}'", name);
-        run_command("helm", &["repo", "add", name, url]).context(err_msg)?;
+    if stderr.contains("Error: no repositories to show") && status.code() == Some(1) {
+        // If the command failed with 'Error: no repositories to show',
+        // then there are no Helm repos but that's OK.
+        debug!("No Helm repos are installed, continuing with installation");
+    } else if stdout.contains(name) && status.code() == Some(0) {
+        // The Helm repo already exists, so we can skip the installation.
+        info!("Helm repo '{}' already exists, skipping installation", name);
+    } else if status.code() != Some(0) {
+        // For any other status code, the command has failed.
+        error!("Failed to list Helm repositories");
+        info!("stdout: {}", stdout);
+        error!("stderr: {}", stderr);
+        return Err(anyhow::anyhow!(
+            "Failed to list Helm repositories. Please check the log output above for more information."
+        ));
+    }
+    debug!("stdout: {}", stdout);
+    debug!("stderr: {}", stderr);
+
+    // Make a connection to the URL.
+    let err_msg = format!("Failed to get URL: {}", url);
+    let response = reqwest::get(url).await.context(err_msg)?;
+
+    // Helm repo URLs often give a 403 Forbidden response or 404 Not Found response.
+    // We don't want to fail if we get one of these responses.
+    let allowed_statuses = [StatusCode::OK, StatusCode::FORBIDDEN, StatusCode::NOT_FOUND];
+
+    // Check that a webserver is listening on the URL, we don't what the response is.
+    // This is because most Helm repo URLs will give a
+    // 403 Forbidden response or 404 Not Found response.
+    if !allowed_statuses.contains(&response.status()) {
+        error!("Failed to get URL: {}", url);
+        error!("Status code: {}", response.status());
+        error!("Response body: {}", response.text().await?);
+        return Err(anyhow::anyhow!("Failed to get URL: {}", url));
     } else {
-        debug!("Helm repo {} is already installed, skipping", name);
+        debug!("URL '{}' is valid", url);
     }
 
-    Ok(())
-}
-*/
-/*
-/// Update all Helm repositories
-///
-/// # Examples
-///
-/// ```rust
-/// use loopy::helm::helm_update_repos;
-/// fn main() {
-///     let result = helm_update_repos();
-///     assert!(result.is_ok());
-/// }
-///```
-///
-pub fn helm_update_repos() -> Result<()> {
-    info!("Updating Helm repos");
+    // Add the Helm repo
+    let err_msg = format!("Failed to add Helm repository '{}'", name);
+    let (stdout, stderr, status) =
+        run_command("helm", &["repo", "add", name, url]).context(err_msg)?;
 
-    // Run the helm repo update command
-    let err_msg = "Failed to update Helm repositories".to_string();
-    run_command("helm", &["repo", "update"]).context(err_msg)?;
+    // Check the status code of the command.
+    if status.code() == Some(0) {
+        info!("Helm repo '{}' installed successfully", name);
+    } else {
+        error!("Failed to add Helm repository '{}'", name);
+        info!("stdout: {}", stdout);
+        error!("stderr: {}", stderr);
+        return Err(anyhow::anyhow!(
+            "Failed to add Helm repository '{}'. Please check the log output above for more information.",
+            name
+        ));
+    }
+    debug!("stdout: {}", stdout);
+    debug!("stderr: {}", stderr);
 
     Ok(())
 }
-*/
+
 /// Uninstall the given Helm chart release
 ///
 /// # Arguments
@@ -89,7 +155,7 @@ pub fn helm_update_repos() -> Result<()> {
 /// assert!(result.is_ok());
 /// ```
 ///
-pub fn helm_uninstall_repo(name: &str) -> Result<()> {
+fn helm_uninstall_repo(name: &str) -> Result<()> {
     info!("Uninstalling Helm repo: {}", name);
 
     let err_msg = "Failed to list Helm repositories".to_string();
@@ -125,29 +191,99 @@ pub fn helm_uninstall_repo(name: &str) -> Result<()> {
     Ok(())
 }
 
-/*
+/// Update all Helm repositories
+///
+/// # Examples
+///
+/// ```rust
+/// use loopy::helm::helm_update_repos;
+/// let result = helm_update_repos();
+/// assert!(result.is_ok());
+///```
+///
+fn helm_update_repos() -> Result<()> {
+    info!("Updating Helm repos");
+
+    // Run the helm repo update command
+    let err_msg = "Failed to update Helm repositories".to_string();
+    let (stdout, stderr, status) = run_command("helm", &["repo", "update"]).context(err_msg)?;
+
+    if stderr.contains("Error: no repositories found. You must add one before updating")
+        && status.code() == Some(1)
+    {
+        // If the command failed with 'Error: no repositories found. You must add one before updating',
+        // then there are no Helm repos but that's OK.
+        debug!("No Helm repos are installed, skipping update");
+    } else if status.code() != Some(0) {
+        error!("Failed to update Helm repositories");
+        info!("stdout: {}", stdout);
+        error!("stderr: {}", stderr);
+        return Err(anyhow::anyhow!(
+            "Failed to update Helm repositories. Please check the log output above for more information."
+        ));
+    } else {
+        info!("Helm repos updated successfully");
+    }
+    debug!("stdout: {}", stdout);
+    debug!("stderr: {}", stderr);
+
+    Ok(())
+}
+
+/// Manage Helm chart releases
+///
+/// # Arguments
+///
+/// * `action` - The action to perform, either 'install' or 'uninstall'
+/// * `chart` - A Helm Chart struct with the name, repo and optional values filename.
+///
+pub fn helm_chart(action: &str, chart: &Chart) -> Result<()> {
+    match action {
+        "install" => {
+            // Use chart.namespace if set, otherwise use chart.name as the default.
+            let namespace = chart.namespace.as_ref().unwrap_or(&chart.name);
+
+            // Call helm_install_chart with the provided values or None if not set.
+            helm_install_chart(&chart.name, &chart.repo, namespace, chart.values.as_deref())
+        }
+
+        "uninstall" => helm_uninstall_chart(&chart.name),
+
+        "prepare" => helm_prepare_chart(&chart.name, &chart.repo),
+
+        _ => Err(anyhow::anyhow!(
+            "Invalid action, only 'install', 'uninstall', or 'prepare' are allowed"
+        )),
+    }
+}
+
 /// Install or upgrade the given Helm chart release
 ///
 /// # Arguments
 ///
 /// * `name` - The name of the Helm release to install or upgrade
 /// * `repo` - The Helm repository where the chart is located
+/// * `values` - An optional name of the values file to use.
 ///
 /// # Examples
 ///
 /// ```rust
 /// use loopy::helm::helm_install_chart;
-/// fn main() {
-///     let result = helm_install_chart("example", "example-repo");
-///     assert!(result.is_ok());
-/// }
+/// let result = helm_install_chart("example", "example-repo");
+/// assert!(result.is_ok());
 /// ```
 ///
-pub fn helm_install_chart(name: &str, repo: &str) -> Result<()> {
-    info!("Installing Helm chart: {}", name);
+fn helm_install_chart(
+    name: &str,
+    repo: &str,
+    namespace: &str,
+    values_filename: Option<&str>,
+) -> Result<()> {
+    info!("Installing Helm chart: {} into {}", name, namespace);
 
     // Check if the chart directory exists
-    let chart_dir = format!("config/helm/{}", name);
+    let chart_dir: String = format!("config/helm/{}", name);
+
     if !Path::new(&chart_dir).exists() {
         return Err(anyhow::anyhow!(
             "Helm chart directory '{}' does not exist. Please create the folder structure from the docs and try again.",
@@ -158,14 +294,25 @@ pub fn helm_install_chart(name: &str, repo: &str) -> Result<()> {
     }
 
     // Determine the values file to use.
-    let values_file = if Path::new(&format!("{}/values.yaml", chart_dir)).exists() {
-        format!("{}/values.yaml", chart_dir)
+    let values_file = if let Some(filename) = values_filename {
+        let path = format!("{}/{}", chart_dir, filename);
+        if !Path::new(&path).exists() {
+            return Err(anyhow::anyhow!(
+                "Provided values file '{}' does not exist.",
+                path
+            ));
+        }
+        path
     } else {
-        format!("{}/defaults.yaml", chart_dir)
+        let default_path = format!("{}/values.yaml", chart_dir);
+        if !Path::new(&default_path).exists() {
+            helm_prepare_chart(name, repo)?;
+        }
+        default_path
     };
 
     // Check if the helm release already exists
-    let (stdout, stderr, status) = run_command("helm", &["list", "--namespace", name])?;
+    let (stdout, stderr, status) = run_command("helm", &["list", "--namespace", namespace])?;
 
     // Handle the error condition first.
     if status.code() != Some(0) {
@@ -181,8 +328,7 @@ pub fn helm_install_chart(name: &str, repo: &str) -> Result<()> {
                 "--values",
                 &values_file,
                 "--namespace",
-                name,
-                "--create-namespace",
+                namespace,
                 &format!("{}/{}", repo, name),
             ],
         )
@@ -197,7 +343,7 @@ pub fn helm_install_chart(name: &str, repo: &str) -> Result<()> {
                 "--values",
                 &values_file,
                 "--namespace",
-                name,
+                namespace,
                 "--create-namespace",
                 &format!("{}/{}", repo, name),
             ],
@@ -207,7 +353,7 @@ pub fn helm_install_chart(name: &str, repo: &str) -> Result<()> {
 
     Ok(())
 }
-*/
+
 /// Uninstall the given Helm chart release
 ///
 /// # Arguments
@@ -222,7 +368,7 @@ pub fn helm_install_chart(name: &str, repo: &str) -> Result<()> {
 /// assert!(result.is_ok());
 /// ```
 ///
-pub fn helm_uninstall_chart(name: &str) -> Result<()> {
+fn helm_uninstall_chart(name: &str) -> Result<()> {
     info!("Uninstalling Helm chart: {}", name);
 
     // Check if the helm release exists in the specified namespace
@@ -243,7 +389,6 @@ pub fn helm_uninstall_chart(name: &str) -> Result<()> {
     Ok(())
 }
 
-/*
 /// Prepare the given Helm chart by creating its directory and defaults.yaml file if they don't already exist
 ///
 /// # Arguments
@@ -255,13 +400,11 @@ pub fn helm_uninstall_chart(name: &str) -> Result<()> {
 ///
 /// ```rust
 /// use loopy::helm::helm_prepare_chart;
-/// fn main() {
-///     let result = helm_prepare_chart("example", "example-repo");
-///     assert!(result.is_ok());
-/// }
+/// let result = helm_prepare_chart("example", "example-repo");
+/// assert!(result.is_ok());
 /// ```
 ///
-pub fn helm_prepare_chart(name: &str, repo: &str) -> Result<()> {
+fn helm_prepare_chart(name: &str, repo: &str) -> Result<()> {
     info!("Preparing Helm chart: {}", name);
 
     // Create the chart directory if it doesn't exist
@@ -296,7 +439,7 @@ pub fn helm_prepare_chart(name: &str, repo: &str) -> Result<()> {
 
     Ok(())
 }
-*/
+
 /*
 #[cfg(test)]
 mod tests {

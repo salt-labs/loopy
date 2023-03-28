@@ -668,9 +668,15 @@ pub async fn download_tool(
 ///
 /// # Returns
 ///
-/// A `Result` containing the output of the command if successful, or an error if the command fails
+/// A `Result` containing;
+///    - the standard output of the command if successful.
+///    - the standard error of the command if it failed.
+///    - the exit status.
 ///
-pub fn run_command(cmd_name: &str, args: &[&str]) -> Result<String> {
+pub fn run_command(
+    cmd_name: &str,
+    args: &[&str],
+) -> Result<(String, String, std::process::ExitStatus)> {
     // Check if the command exists in the path.
     if check_command_in_path(cmd_name).is_err() {
         return Err(anyhow::anyhow!("Command '{}' not found in PATH", cmd_name));
@@ -683,19 +689,12 @@ pub fn run_command(cmd_name: &str, args: &[&str]) -> Result<String> {
         cmd.args(args);
     }
 
-    let output = cmd
-        .output()
-        .with_context(|| format!("Failed to execute command '{}'", cmd_name))?;
+    let err_msg = format!("Failed to execute command '{}'", cmd_name);
+    let output = cmd.output().context(err_msg)?;
 
-    if output.status.success() {
-        println!("Command '{} {}' succeeded", cmd_name, args.join(" "));
-        Ok(String::from_utf8_lossy(&output.stdout).to_string())
-    } else {
-        Err(anyhow::anyhow!(
-            "Command '{} {}' failed with error: {}",
-            cmd_name,
-            args.join(" "),
-            String::from_utf8_lossy(&output.stderr)
-        ))
-    }
+    Ok((
+        String::from_utf8_lossy(&output.stdout).to_string(),
+        String::from_utf8_lossy(&output.stderr).to_string(),
+        output.status,
+    ))
 }

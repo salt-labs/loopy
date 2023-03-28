@@ -8,23 +8,35 @@ use clap::Parser;
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    // Where to read configuration from.
-    #[clap(long)]
+    /// The file path to read configuration data from.
+    #[clap(short, long, default_value = "loopy.yaml")]
     pub config: Option<String>,
 
-    // Uninstall instead of install.
-    #[clap(long)]
-    pub cleanup: bool,
+    /// The action to perform.
+    /// Can be either --install or --uninstall.
+    #[clap(short, long)]
+    pub action: Option<String>,
 }
 
 impl Args {
     pub fn parse() -> Self {
         let args = Args::try_parse().unwrap_or_else(|e| e.exit());
 
+        // Validate the provided arguments before continuing.
+        validate_args(&args).unwrap_or_else(|e| {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        });
+
         let config = args.config;
 
-        let cleanup = args.cleanup;
+        let action = args.action;
 
-        Self { config, cleanup }
+        Self { config, action }
     }
+}
+
+fn validate_args(_args: &Args) -> Result<(), String> {
+    // TODO: Validate the provided arguments.
+    Ok(())
 }

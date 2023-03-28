@@ -24,15 +24,17 @@ pub struct Log {
 
 #[derive(Debug, Deserialize)]
 pub struct Dependencies {
-    pub tools: Vec<Tool>,
-    pub manifests: Vec<Manifests>,
+    //pub carvel: Carvel,
     pub helm: Helm,
+    pub manifests: Vec<Manifests>,
+    pub tools: Vec<Tool>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Application {
-    pub manifests: Vec<Manifests>,
+    //pub carvel: Carvel,
     pub helm: Helm,
+    pub manifests: Vec<Manifests>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,6 +52,18 @@ pub struct Manifests {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct Carvel {
+    pub packages: Vec<Package>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Package {
+    pub name: String,
+    pub version: String,
+    pub values: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Helm {
     pub repositories: Vec<Repository>,
     pub charts: Vec<Chart>,
@@ -59,13 +73,13 @@ pub struct Helm {
 pub struct Repository {
     pub name: String,
     pub url: String,
-    pub values: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Chart {
     pub name: String,
     pub repo: String,
+    pub values: Option<String>,
 }
 
 /// Load config.
@@ -75,8 +89,8 @@ pub struct Chart {
 pub fn load_config(config_file: &str) -> Result<Config> {
     if !Path::new(config_file).exists() {
         let err_msg = format!(
-            "The loopy configuration file {} was not found in the current directory.
-            Perhaps you forgot to provide the location with --config",
+            "The configuration file {} was not found in the current directory.
+            You can provide a path to the configuration file with --config",
             config_file
         );
         anyhow::bail!(err_msg);
@@ -129,7 +143,7 @@ fn validate_config(config: &Config) -> Result<()> {
 
         // Ensure that either the url or dir field of each manifest is not empty.
         let err_msg = format!(
-            "The 'url' and 'dir' field of {} cannot both be empty.",
+            "The 'url' and 'dir' field of {} cannot both be empty, at least one must be defined.",
             manifest.name
         );
         if manifest.url.is_none() && manifest.dir.is_none() {
@@ -182,7 +196,7 @@ fn validate_config(config: &Config) -> Result<()> {
 
         // Ensure that either the url or dir field of each manifest is not empty.
         let err_msg = format!(
-            "The 'url' and 'dir' field of {} cannot both be empty.",
+            "The 'url' and 'dir' field of {} cannot both be empty, at least one must be defined.",
             manifest.name
         );
         if manifest.url.is_none() && manifest.dir.is_none() {
@@ -205,8 +219,6 @@ fn validate_config(config: &Config) -> Result<()> {
                 anyhow::bail!(err_msg);
             }
         }
-
-        // The values field is optional.
     }
 
     // Validate application.helm.charts
@@ -223,6 +235,8 @@ fn validate_config(config: &Config) -> Result<()> {
         if chart.repo.trim().is_empty() {
             anyhow::bail!(err_msg);
         }
+
+        // The values field is optional.
     }
 
     Ok(())

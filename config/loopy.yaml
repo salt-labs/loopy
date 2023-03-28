@@ -19,10 +19,20 @@ dependencies:
       url: https://github.com/kubernetes-sigs/kind/releases/download/v0.17.0/kind-linux-amd64
 
   manifests:
+    #- name: antrea
+    #  dir: antrea
+    # Ingress option A
+    #- name: contour
+    #  url: https://projectcontour.io/quickstart/contour.yaml
+    #  dir: contour
+    # Ingress option B
     - name: contour-gateway
-      url: https://projectcontour.io/quickstart/contour.yaml
-    - name: test
-      dir: test
+      url: https://projectcontour.io/quickstart/contour-gateway-provisioner.yaml
+      dir: contour-gateway
+    - name: cert-manager
+      dir: cert-manager
+    #- name: nfs-server-provisioner
+    #  dir: nfs-server-provisioner
 
   # Helm specific configuration
   helm:
@@ -50,11 +60,23 @@ dependencies:
         repo: ako
 
     # TODO: Finish Carvel implementation.
-    carvel:
+    #carvel:
 
 # Application specific configuration
 application:
   manifests:
+    - name: bamboo
+      dir: atlassian-bamboo
+    - name: bamboo-agent
+      dir: atlassian-bamboo-agent
+    - name: bitbucket
+      dir: atlassian-bitbucket
+    - name: confluence
+      dir: atlassian-confluence
+    - name: crowd
+      dir: atlassian-crowd
+    - name: jira
+      dir: atlassian-jira
 
   helm:
     repositories:
@@ -80,4 +102,4 @@ application:
         values: atlassian-jira
 
     # TODO: Finish Carvel implementation.
-    carvel:
+    #carvel:

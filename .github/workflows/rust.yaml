@@ -161,13 +161,14 @@ jobs:
           VCPKG_ROOT: ${{ github.workspace }}\vcpkg
           VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
           VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
-          RUSTFLAGS: "-Ctarget-feature=+crt-static"
         run: |
+          $env:LIBMAGIC_DIR: "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
           $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
           $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
+          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
           cargo --version
           cargo check --verbose
 
@@ -203,13 +204,14 @@ jobs:
           VCPKG_ROOT: ${{ github.workspace }}\vcpkg
           VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
           VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
-          RUSTFLAGS: "-Ctarget-feature=+crt-static"
         run: |
+          $env:LIBMAGIC_DIR: "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
           $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
           $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
+          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
           cargo build --verbose
 
       - id: cargo_test
@@ -228,11 +230,12 @@ jobs:
           VCPKG_ROOT: ${{ github.workspace }}\vcpkg
           VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
           VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
-          RUSTFLAGS: "-Ctarget-feature=+crt-static"
         run: |
+          $env:LIBMAGIC_DIR: "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
           $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
           $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
           $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
+          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
           cargo test --verbose

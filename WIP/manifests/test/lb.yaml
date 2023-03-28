@@ -1,0 +1,56 @@
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: test-1
+  namespace: test
+  labels:
+    app: http-echo
+spec:
+  containers:
+    - name: test
+      image: hashicorp/http-echo:0.2.3
+      args:
+        - "-text=Hello from Container 1"
+      resources:
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        requests:
+          cpu: 100m
+          memory: 100Mi
+
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: test-2
+  namespace: test
+  labels:
+    app: http-echo
+spec:
+  containers:
+    - name: test
+      image: hashicorp/http-echo:0.2.3
+      args:
+        - "-text=Hello from Container 2"
+      resources:
+        limits:
+          cpu: 100m
+          memory: 100Mi
+        requests:
+          cpu: 100m
+          memory: 100Mi
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: test
+  namespace: test
+spec:
+  type: LoadBalancer
+  selector:
+    app: http-echo
+  ports:
+    - port: 5678

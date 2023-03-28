@@ -309,7 +309,10 @@ fn helm_install_chart(
 
         if !Path::new(&default_path).exists() {
             // If the default values file doesn't exist, create it.
-            debug!("Default values file does not exist, creating one now for future modifications at: {}", default_path);
+            debug!(
+                "A default values file does not exist, creating one now: {}",
+                default_path
+            );
             helm_prepare_chart(name, repo)?;
         }
 
@@ -318,14 +321,17 @@ fn helm_install_chart(
 
     // Check if the helm release already exists
     let (stdout, stderr, status) = run_command("helm", &["list", "--namespace", namespace])?;
+    debug!("stdout: {}", stdout);
+    debug!("stderr: {}", stderr);
 
     // Handle the error condition first.
     if status.code() != Some(0) {
         let error_msg = format!("Failed to list Helm releases: {}", stderr);
         return Err(anyhow::anyhow!(error_msg));
     } else if stdout.contains(name) {
+        debug!("Helm release already exists, upgrading: {}", name);
         // If the helm release is already installed, upgrade it.
-        run_command(
+        let (stdout, stderr, status) = run_command(
             "helm",
             &[
                 "upgrade",
@@ -339,9 +345,17 @@ fn helm_install_chart(
             ],
         )
         .with_context(|| format!("Failed to upgrade Helm chart '{}'", name))?;
+        debug!("stdout: {}", stdout);
+        debug!("stderr: {}", stderr);
+
+        if status.code() != Some(0) {
+            let error_msg = format!("Failed to upgrade Helm chart: {}", stderr);
+            return Err(anyhow::anyhow!(error_msg));
+        }
     } else {
+        debug!("Helm release does not exist, installing: {}", name);
         // If the helm release doesn't currently exist, install it.
-        run_command(
+        let (stdout, stderr, status) = run_command(
             "helm",
             &[
                 "install",
@@ -356,6 +370,13 @@ fn helm_install_chart(
             ],
         )
         .with_context(|| format!("Failed to install Helm chart '{}'", name))?;
+        debug!("stdout: {}", stdout);
+        debug!("stderr: {}", stderr);
+
+        if status.code() != Some(0) {
+            let error_msg = format!("Failed to install Helm chart: {}", stderr);
+            return Err(anyhow::anyhow!(error_msg));
+        }
     }
 
     Ok(())
@@ -380,15 +401,27 @@ fn helm_uninstall_chart(name: &str) -> Result<()> {
 
     // Check if the helm release exists in the specified namespace
     let (stdout, stderr, status) = run_command("helm", &["list", "--namespace", name])?;
+    debug!("stdout: {}", stdout);
+    debug!("stderr: {}", stderr);
 
     // Handle the error condition first.
     if status.code() != Some(0) {
         let error_msg = format!("Failed to list Helm releases: {}", stderr);
         return Err(anyhow::anyhow!(error_msg));
     } else if stdout.contains(name) {
+        debug!("Helm chart '{}' is installed, uninstalling.", name);
+
         // If the helm release exists, uninstall it.
-        run_command("helm", &["uninstall", name, "--namespace", name])
-            .with_context(|| format!("Failed to uninstall Helm chart '{}'", name))?;
+        let (stdout, stderr, status) =
+            run_command("helm", &["uninstall", name, "--namespace", name])
+                .with_context(|| format!("Failed to uninstall Helm chart '{}'", name))?;
+        debug!("stdout: {}", stdout);
+        debug!("stderr: {}", stderr);
+
+        if status.code() != Some(0) {
+            let error_msg = format!("Failed to uninstall Helm chart: {}", stderr);
+            return Err(anyhow::anyhow!(error_msg));
+        }
     } else {
         info!("Helm chart '{}' is not installed, skipping.", name)
     }

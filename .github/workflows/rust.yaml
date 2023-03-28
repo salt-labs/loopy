@@ -184,9 +184,8 @@ jobs:
           RUSTFLAGS: "-Ctarget-feature=+crt-static"
           OPENSSL_DIR: ${{ github.workspace }}/vcpkg/installed/x64-windows-static
         run: |
-          $env:LIB = "$env:VCPKG_ROOT\installed\x64-windows-static\lib;$env:LIB"
-          $env:LIB = "$env:VCPKG_ROOT\installed\x64-windows-static\lib;$env:LIB"
-          $env:INCLUDE = "$env:VCPKG_ROOT\installed\x64-windows-static\include;$env:INCLUDE"
+          $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
+          $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
           cargo build --verbose
 
       - id: cargo_test
@@ -203,9 +202,11 @@ jobs:
         env:
           VCPKGRS_DYNAMIC: "1"
           VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+          VCPKG_DEFAULT_TRIPLET: "x64-windows-static"
+          VCPKG_INSTALLED: ${{ github.workspace }}/vcpkg/installed/
           RUSTFLAGS: "-Ctarget-feature=+crt-static"
           OPENSSL_DIR: ${{ github.workspace }}/vcpkg/installed/x64-windows-static
         run: |
-          $env:LIB = "$env:VCPKG_ROOT\installed\x64-windows-static\lib;$env:LIB"
-          $env:INCLUDE = "$env:VCPKG_ROOT\installed\x64-windows-static\include;$env:INCLUDE"
+          $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
+          $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
           cargo test --verbose

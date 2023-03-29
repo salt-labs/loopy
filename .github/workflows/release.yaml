@@ -27,6 +27,8 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
 
+  #RUSTFLAGS: "-C target-feature=+crt-static"
+
   REGISTRY: ghcr.io
 
   REGISTRY_USERNAME: ${{ github.actor }}

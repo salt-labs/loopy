@@ -146,6 +146,7 @@ jobs:
             curl \
             file \
             gcc \
+            g++ \
             git \
             libgcc1 \
             libgcc-7-dev \
@@ -259,7 +260,6 @@ jobs:
         with:
           entrypoint: cargo
           args: build --verbose --target ${{ matrix.target }} --release
-        continue-on-error: true
 
       - id: cargo_build_windows
         name: Run Cargo build (Windows)

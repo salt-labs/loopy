@@ -146,6 +146,7 @@ jobs:
             file \
             g++ \
             git \
+            libmagic-dev \
             libpq-dev \
             libssl-dev \
             libtool \
@@ -174,6 +175,7 @@ jobs:
         run: |
           brew update
           brew unlink pkg-config
+          brew link --overwrite pkgconf
           brew install libmagic openssl pkgconf bzip2 figlet file gnu-tar zlib zstd
 
       - id: setup_rust_windows
@@ -250,9 +252,8 @@ jobs:
         if: matrix.target == 'x86_64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         uses: docker://clux/muslrust:stable
         with:
-          args: |
-            cargo --version
-            cargo build --verbose --target ${{ matrix.target }} --release
+          entrypoint: cargo
+          args: build --verbose --target ${{ matrix.target }} --release
 
       - id: cargo_build_windows
         name: Run Cargo build (Windows)

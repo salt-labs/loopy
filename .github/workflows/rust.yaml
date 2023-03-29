@@ -8,7 +8,7 @@ name: Rust
 
 on:
   # A pull request will trigger a build and test.
-  pull_request_target:
+  pull_request:
     branches:
       - trunk
     types:

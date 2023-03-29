@@ -46,11 +46,13 @@ dependencies:
       - name: contour
         repo: bitnami
         namespace: contour
-        values: values-http.yaml
+        values: values-kind.yaml
       - name: nfs-server-provisioner
         repo: nfs-ganesha
+        namespace: nfs-server
       - name: postgresql-ha
         repo: bitnami
+        namespace: postgresql
 
 application:
   manifests:

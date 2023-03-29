@@ -11,7 +11,7 @@ spec:
     kind: ContourDeployment
     group: projectcontour.io
     name: contour-envoy
-    namespace: projectcontour
+    namespace: contour
 
 ---
 # https://gateway-api.sigs.k8s.io/api-types/gateway/
@@ -20,7 +20,7 @@ kind: Gateway
 apiVersion: gateway.networking.k8s.io/v1beta1
 metadata:
   name: contour
-  namespace: projectcontour
+  namespace: contour
 spec:
   gatewayClassName: gateway
   listeners:
@@ -43,7 +43,7 @@ spec:
           - kind: Secret
             group: ""
             name: ingress-tls
-            namespace: projectcontour
+            namespace: contour
 
 ---
 # https://projectcontour.io/docs/main/config/api/#projectcontour.io/v1alpha1.ContourDeployment
@@ -52,7 +52,7 @@ kind: ContourDeployment
 apiVersion: projectcontour.io/v1alpha1
 metadata:
   name: contour-envoy
-  namespace: projectcontour
+  namespace: contour
 spec:
   contour:
     kubernetesLogLevel: 1

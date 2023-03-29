@@ -48,7 +48,7 @@ dependencies:
     charts:
       - name: contour
         repo: bitnami
-        namespace: projectcontour
+        namespace: contour
         values: values-http.yaml
       #- name: postgresql-ha
       #  repo: bitnami

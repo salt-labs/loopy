@@ -7,7 +7,8 @@
 name: Rust
 
 on:
-  pull_request:
+  # A pull request will trigger a build and test.
+  pull_request_target:
     branches:
       - trunk
     types:
@@ -20,9 +21,23 @@ on:
       - "docs/**"
       - "**.md"
 
-env:
-  CARGO_TERM_COLOR: always
+  # A successful completion of this worflow will trigger a release.
+  push:
+    branches:
+      - "trunk"
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
 
+env:
+  ORGANISATION: ${{ github.repository_owner }}
+  PROJECT: ${{ github.event.repository.name }}
+
+  # Works on pushes or PRs
+  BRANCH_NAME_CURRENT: ${{ github.head_ref || github.ref_name }}
+  BRANCH_NAME_DEFAULT: ${{ github.event.repository.default_branch }}
+
+  CARGO_TERM_COLOR: always
   #RUSTFLAGS: "-C target-feature=+crt-static"
 
 defaults:
@@ -55,9 +70,9 @@ jobs:
           - target: x86_64-apple-darwin
             os: macos-latest
             toolchain: stable
-          #- target: x86_64-pc-windows-msvc
-          #  os: windows-latest
-          #  toolchain: stable
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            toolchain: stable
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             toolchain: stable
@@ -65,7 +80,7 @@ jobs:
     steps:
       - id: setup_rust
         name: Setup the Rust environment
-        uses: actions-rs/toolchain@v1
+        uses: actions-rs/toolchain@v2
         with:
           target: ${{ matrix.target }}
           toolchain: ${{ matrix.toolchain }}
@@ -121,26 +136,27 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
-          sudo apt install pkg-config libssl-dev
+          sudo apt install -y build-essential curl pkgconf libssl-dev zlib1g-dev
 
       - id: setup_rust_arm64
         name: Setup the Rust environment for ARM64
         if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt install gcc-multilib
-
-      - id: setup_rust_macos
-        name: Setup the Rust environment for MacOS
-        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
-        run: |
-          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar zlib zstd
+          sudo apt update
+          sudo apt install -y gcc-multilib
 
       - id: setup_rust_musl
         name: Setup the Rust environment for MUSL
         if: matrix.target == 'x86_64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
-          sudo apt install -y musl-tools
+          sudo apt-get install -y musl-dev musl-tools
+
+      - id: setup_rust_macos
+        name: Setup the Rust environment for MacOS
+        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
+        run: |
+          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar zlib zstd
 
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows
@@ -208,7 +224,7 @@ jobs:
         if: matrix.target != 'x86_64-pc-windows-msvc'
         run: |
           cargo --version
-          cargo build --verbose
+          cargo build --verbose --target ${{ matrix.target }}
 
       - id: cargo_build_windows
         name: Run Cargo build (Windows)
@@ -227,14 +243,14 @@ jobs:
           $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
           $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
-          cargo build --verbose
+          cargo build --verbose --target ${{ matrix.target }}
 
       - id: cargo_test
         name: Run Cargo tests
         if: matrix.target != 'x86_64-pc-windows-msvc'
         run: |
           cargo --version
-          cargo test --verbose
+          cargo test --verbose --target ${{ matrix.target }}
 
       - id: cargo_test_windows
         name: Run Cargo tests (Windows)
@@ -253,4 +269,27 @@ jobs:
           $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
           $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
           $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
-          cargo test --verbose
+          cargo test --verbose --target ${{ matrix.target }}
+
+      - id: archive_rust
+        name: Archive Rust artifacts (cross-platform)
+        if: >-
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/${{ env.BRANCH_NAME_DEFAULT}}'
+        shell: pwsh
+        working-directory: "${{ github.workspace }}"
+        run: >
+          ./.github/scripts/archive.ps1
+          -Target ${{ matrix.target }}
+          -LogLevel debug
+          -DieHard
+          -OutputDir artifacts
+
+      - id: upload_artifacts
+        name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: ${{ env.PROJECT }}-${{ matrix.target }}.zip
+          path: artifacts/${{ env.PROJECT }}-${{ matrix.target }}.zip

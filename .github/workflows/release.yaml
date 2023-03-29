@@ -7,39 +7,25 @@
 name: Release
 
 on:
-  # Treating approved PRs into trunk as "pre-releases"
-  pull_request_review:
+  workflow_run:
+    workflows:
+      - "Rust"
     types:
-      - submitted
-
-  # Treating merged PRs into trunk as "releases"
-  push:
-    branches:
-      - "trunk"
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
+      - completed
 
 permissions:
-  packages: write
-  contents: write
+  contents: read
 
 env:
-  CARGO_TERM_COLOR: always
-
-  #RUSTFLAGS: "-C target-feature=+crt-static"
-
-  REGISTRY: ghcr.io
-
-  REGISTRY_USERNAME: ${{ github.actor }}
-  REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-
   ORGANISATION: ${{ github.repository_owner }}
   PROJECT: ${{ github.event.repository.name }}
 
   # Works on pushes or PRs
   BRANCH_NAME_CURRENT: ${{ github.head_ref || github.ref_name }}
   BRANCH_NAME_DEFAULT: ${{ github.event.repository.default_branch }}
+
+  CARGO_TERM_COLOR: always
+  #RUSTFLAGS: "-C target-feature=+crt-static"
 
 defaults:
   run:
@@ -67,447 +53,54 @@ jobs:
       - id: checkout_repository
         name: Checkout repository with all history and tags
         uses: actions/checkout@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB_REPOS }}
         with:
           fetch-depth: 0
           submodules: false
           clean: true
           persist-credentials: true
 
-      # NOTE: Cargo version needs to be SemVer compatible
-      # ${MAJOR}.${MINOR}.${PATCH}-${PRE-RELEASE}+${BUILD}
-      - id: prep_release
-        name: Prepare for Release
-        uses: salt-labs/action-its-shipping-time@trunk
-        with:
-          loglevel: "INFO"
-          tag_enable: "TRUE"
-          tag_force: "FALSE"
-          changelog_enable: "TRUE"
-          git_pretty_format: "* %h %G? %aN - %s"
-          calver_enable: "FALSE"
-          calver_scheme: "YYYY.MM.GEN"
-          calver_split: "."
-          calver_split_mod: "."
-          semver_enabled: "TRUE"
-          # TODO: Add reading type from PR labels for what to bump.
-          #semver_type: "${{ steps.read_labels.outputs.labels.semver_type | default 'patch' }}"
-          semver_prefix: ""
-          semver_suffix: ""
-          timezone: "Australia/Sydney"
-
       - id: cargo_version
         name: Read Cargo.toml version
         run: |
           echo VERSION="$(grep -E "^version = " Cargo.toml | awk '{print $3}' | tr -d '"')" >> "${GITHUB_OUTPUT}"
 
-      - id: check_tags_prerelease
-        name: Check git tags (Pre-release)
+      - id: check_tags
+        name: Check git tags
         env:
-          TAG_VERSION: "${{ steps.cargo_version.outputs.VERSION }}-rc"
+          TAG: ${{ steps.cargo_version.outputs.VERSION }}
         run: |
           git fetch --tags
-          if [[ $(git show-ref --tags --verify -- "refs/tags/${{ env.TAG_VERSION }}") ]]
+          if git show-ref --tags --verify --quiet "refs/tags/$TAG"
           then
-            echo "The tag ${{ env.TAG_VERSION }} already exists, did you forget to bump the version?"
-            echo "CREATE_TAG=false" >> "${GITHUB_OUTPUT}"
+            echo "The Release tag ${TAG} already exists, did you forget to bump the version?"
             exit 1
           else
-            echo "The tag ${{ env.TAG_VERSION }} does not yet exist."
+            echo "The Release tag ${TAG} does not exist."
             echo "CREATE_TAG=true" >> "${GITHUB_OUTPUT}"
           fi
 
-      - id: check_tags_release
-        name: Check git tags (Release)
-        env:
-          TAG_VERSION: "${{ steps.cargo_version.outputs.VERSION }}"
-        run: |
-          git fetch --tags
-          if [[ $(git show-ref --tags --verify -- "refs/tags/${{ env.TAG_VERSION }}") ]]
-          then
-            echo "The tag ${{ env.TAG_VERSION }} already exists, did you forget to bump the version?"
-            echo "CREATE_TAG=false" >> "${GITHUB_OUTPUT}"
-            exit 1
-          else
-            echo "The tag ${{ env.TAG_VERSION }} does not yet exist."
-            echo "CREATE_TAG=true" >> "${GITHUB_OUTPUT}"
-          fi
-
-      - id: create_release_prerelease
-        name: Create Pre-Release
-        if: ${{ github.event.review.state == 'approved' && steps.check_tags_prerelease.outputs.CREATE_TAG == 'true' }}
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - id: fetch_artifact
+        name: Fetch all build artifacts
+        uses: actions/download-artifact@v3
         with:
-          tag_name: ${{ steps.cargo_version.outputs.VERSION }}-rc
-          release_name: ${{ steps.cargo_version.outputs.VERSION }}-rc
-          body: |
-            # ${{ steps.prep_release.outputs.repo_name }} changelog
-
-            ${{ steps.prep_release.outputs.changelog }}
-
-            # Install
-
-            ```bash
-            cargo install ${{ env.PROJECT }} --version ${{ steps.cargo_version.outputs.VERSION }}
-            ```
-          draft: false
-          prerelease: true
+          path: artifacts
 
       - id: create_release
-        if: ${{ github.event_name == 'push' && contains( github.ref, 'trunk' ) && steps.check_tags_release.outputs.CREATE_TAG == 'true' }}
-        name: Create Release Draft
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        name: Create Release
+        if: >-
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/${{ env.BRANCH_NAME_DEFAULT}}' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          steps.check_tags.outputs.CREATE_TAG == 'true' &&
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.cargo_version.outputs.VERSION }}
-          release_name: ${{ steps.cargo_version.outputs.VERSION }}
-          body: |
-            # ${{ steps.prep_release.outputs.repo_name }} changelog
-
-            ${{ steps.prep_release.outputs.changelog }}
-
-            # Install
-
-            ```bash
-            cargo install ${{ env.PROJECT }} --version ${{ steps.cargo_version.outputs.VERSION }}
-            ```
-          draft: true
           prerelease: false
-
-    outputs:
-      # Prep-Release
-      calver: ${{ steps.prep_release.outputs.calver }}
-      semver: ${{ steps.prep_release.outputs.semver }}
-      changelog: ${{ steps.prep_release.outputs.changelog }}
-      repo_owner: ${{ steps.prep_release.outputs.repo_owner }}
-      repo_name: ${{ steps.prep_release.outputs.repo_name }}
-
-      # Pre-Release
-      upload_url_prerelease: ${{ steps.create_release_prerelease.outputs.upload_url }}
-
-      # Release
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-
-  #########################
-  # Build the Rust app
-  #########################
-
-  build_rust:
-    name: Build Rust app
-
-    needs:
-      - create_release
-
-    runs-on: ${{ matrix.os }}
-
-    timeout-minutes: 60
-
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            toolchain: stable
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-            toolchain: stable
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            toolchain: stable
-          #- target: x86_64-pc-windows-msvc
-          #  os: windows-latest
-          #  toolchain: stable
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            toolchain: stable
-
-    steps:
-      - id: setup_rust
-        name: Setup the Rust environment
-        uses: actions-rs/toolchain@v1
-        with:
-          target: ${{ matrix.target }}
-          toolchain: ${{ matrix.toolchain }}
-          default: true
-
-      - id: checkout_repository
-        name: Checkout repository
-        uses: actions/checkout@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          persist-credentials: true
-
-      - id: cache_artifacts_cargo_registry
-        name: Cache Cargo registry
-        uses: actions/cache@v2
-        with:
-          path: ~/.cargo/registry
-          key: ${{ matrix.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ matrix.target }}-cargo-registry-
-
-      - id: cache_artifacts_cargo_index
-        name: Cache Cargo index
-        uses: actions/cache@v2
-        with:
-          path: ~/.cargo/git
-          key: ${{ matrix.target }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ matrix.target }}-cargo-index-
-
-      - id: cache_artifacts_cargo_target
-        name: Cache Cargo build
-        uses: actions/cache@v2
-        with:
-          path: target/release
-          key: ${{ matrix.target }}-target-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ matrix.target }}-target-
-
-      - id: cache_artifacts_vcpkg
-        name: Cache vcpkg
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
-        uses: actions/cache@v2
-        with:
-          path: vcpkg
-          key: ${{ matrix.target }}-vcpkg-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ matrix.target }}-vcpkg-
-
-      - id: setup_rust_common
-        name: Setup the Rust environment
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt update
-          sudo apt install pkg-config libssl-dev   
-
-      - id: setup_rust_arm64
-        name: Setup the Rust environment for ARM64
-        if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt update
-          sudo apt install -y gcc-multilib
-
-      - id: setup_rust_macos
-        name: Setup the Rust environment for MacOS
-        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
-        run: |
-          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar zlib zstd
-
-      - id: setup_rust_musl
-        name: Setup the Rust environment for MUSL
-        if: matrix.target == 'x86_64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt update
-          sudo apt install -y musl-tools pkg-config
-
-      - id: setup_rust_windows
-        name: Setup the Rust environment for Windows
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
-        shell: powershell
-        env:
-          VCPKG_INSTALLED: ${{ github.workspace }}/vcpkg/installed/
-          #VCPKG_DEFAULT_TRIPLET: "x64-windows-static" # (libcmt.lib)
-          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md" # (msvcrt.lib)
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          Push-Location -Path "vcpkg"
-          Start-Process ".\bootstrap-vcpkg.bat"
-          vcpkg.exe install curl:${env:VCPKG_DEFAULT_TRIPLET} libmagic:${env:VCPKG_DEFAULT_TRIPLET} openssl:${env:VCPKG_DEFAULT_TRIPLET} zlib:${env:VCPKG_DEFAULT_TRIPLET}
-          vcpkg.exe integrate install
-          Pop-Location
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
-          tree /F ${env:VCPKG_INSTALLED}
-
-      - id: cargo_check
-        name: Run Cargo check
-        if: matrix.target != 'x86_64-pc-windows-msvc'
-        run: |
-          cargo --version
-          cargo check --verbose --target ${{ matrix.target }}
-
-      - id: cargo_check_windows
-        name: Run Cargo check (Windows)
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
-        shell: powershell
-        env:
-          VCPKGRS_DYNAMIC: "1"
-          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
-          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
-          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
-        run: |
-          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
-          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
-          $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
-          $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
-          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
-          cargo --version
-          cargo check --verbose --target ${{ matrix.target }}
-
-      - id: cargo_fmt
-        name: Run Cargo format
-        run: |
-          rustup component add rustfmt
-          rustup component list --toolchain ${{ matrix.toolchain }}
-          cargo fmt --version
-          cargo fmt --all -- --check
-
-      - id: cargo_clippy
-        name: Run Cargo clippy
-        run: |
-          rustup component add clippy
-          rustup component list --toolchain ${{ matrix.toolchain }}
-          cargo clippy --version
-          cargo clippy --all --all-features -- -D warnings
-
-      - id: cargo_build
-        name: Run Cargo build
-        if: matrix.target != 'x86_64-pc-windows-msvc'
-        run: |
-          cargo --version
-          cargo build --verbose --release --target ${{ matrix.target }}
-
-      - id: cargo_build_windows
-        name: Run Cargo build (Windows)
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
-        shell: powershell
-        env:
-          VCPKGRS_DYNAMIC: "1"
-          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
-          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
-          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
-        run: |
-          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
-          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
-          $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
-          $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
-          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
-          cargo build --verbose --release --target ${{ matrix.target }}
-
-      - id: cargo_test
-        name: Run Cargo tests
-        if: matrix.target != 'x86_64-pc-windows-msvc'
-        run: |
-          cargo --version
-          cargo test --verbose
-
-      - id: cargo_test_windows
-        name: Run Cargo tests (Windows)
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
-        shell: powershell
-        env:
-          VCPKGRS_DYNAMIC: "1"
-          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
-          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
-          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
-        run: |
-          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
-          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
-          $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
-          $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
-          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
-          cargo test --verbose
-
-      - id: archive_rust
-        name: Archive Rust artifacts (cross-platform)
-        shell: pwsh
-        working-directory: "${{ github.workspace }}"
-        run: >
-          ./.github/scripts/archive.ps1
-          -Target ${{ matrix.target }}
-          -LogLevel debug
-          -DieHard
-
-      - id: upload_artifacts
-        name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          name: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
-          path: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
-
-  #########################
-  # Publish the the Rust app (GitHub Release)
-  #########################
-
-  release_publish_github:
-    name: Publish Release to GitHub
-
-    needs:
-      - create_release
-      - build_rust
-
-    runs-on: ${{ matrix.os }}
-
-    timeout-minutes: 60
-
-    strategy:
-      fail-fast: true
-      matrix:
-        include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            toolchain: stable
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-            toolchain: stable
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            toolchain: stable
-          #- target: x86_64-pc-windows-msvc
-          #  os: windows-latest
-          #  toolchain: stable
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            toolchain: stable
-
-    steps:
-      - id: fetch_artifact
-        name: Fetch the Build artifact to upload
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
-
-      - id: show_artifacts
-        name: Show downloaded Artifacts
-        run: ls -R
-
-      - id: upload_release_artifact_github_prerelease
-        if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
-        name: Upload Artifact to Pre-Release
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url_prerelease }}
-          asset_path: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
-          asset_name: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
-          asset_content_type: application/zip
-
-      - id: upload_release_artifact_github
-        if: github.event_name == 'push' && contains( github.ref, 'trunk' )
-        name: Upload Artifact to Release
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
-          asset_name: ${{ needs.create_release.outputs.repo_name }}-${{ matrix.target }}.zip
-          asset_content_type: application/zip
+          generate_release_notes: true
+          name: ${{ env.PROJECT }} v${{ steps.cargo_version.outputs.VERSION }}
+          #discussion_category_name: releases
+          files: |
+            artifacts/*
+          fail_on_unmatched_files: true
 
   #########################
   # Publish the the Rust app (crates.io)
@@ -518,7 +111,6 @@ jobs:
 
     needs:
       - create_release
-      - build_rust
 
     runs-on: ${{ matrix.os }}
 
@@ -541,8 +133,6 @@ jobs:
       - id: checkout_repository
         name: Checkout repository
         uses: actions/checkout@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.PAT_GITHUB_REPOS }}
         with:
           fetch-depth: 0
           submodules: false

@@ -6,7 +6,7 @@ edition = "2021"
 homepage = "https://github.com/salt-labs/loopy"
 license-file = "LICENSE"
 name = "loopy"
-version = "0.1.1"
+version = "0.2.0-beta.0"
 
 [dependencies]
 anyhow = "1.0"

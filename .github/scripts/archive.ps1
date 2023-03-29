@@ -19,6 +19,12 @@
 
     For example; 'x86_64-apple-darwin, release'
 
+.PARAMETER OutputDir
+
+    Optional output directory to use for the archive.
+
+    If not provided, defaults to current directory.
+
 .PARAMETER LogLevel
 
     Optional log level to use for the script output.
@@ -50,6 +56,11 @@
     Author: 		MAHDTech@saltlabs.tech
     Creation Date:	17/06/2020
     Purpose/Change:	Initial script development
+
+    Version:        0.2
+    Author:         MAHDTech@saltlabs.tech
+    Creation Date:  29/03/2023
+    Purpose/Change: Add parameter OutputDir
 
 .EXAMPLE
 
@@ -185,6 +196,15 @@ Param(
     [String]
     $LogLevel = "Information",
 
+    # Parameter: OutputDir
+    [Parameter(
+        Mandatory = $False,
+        HelpMessage = "[OPTIONAL]: The output directory for the build."
+    )]
+    [ValidateNotNullOrEmpty()]
+    [String]
+    $OutputDir = "$PWD",
+
     # Parameter: Project
     [Parameter(
         Mandatory = $False,
@@ -239,7 +259,7 @@ Begin {
     $ScriptFileName = $ScriptInvocation.MyCommand.Name
 
     # Script Version
-    $ScriptVersion = "0.1"
+    $ScriptVersion = "0.2"
 
     # Set the Script Name so it can be used in logs, matching the filename with no extension
     $ScriptName = [System.IO.Path]::GetFilenameWithoutExtension($ScriptFileName)
@@ -776,8 +796,8 @@ Begin {
     }
     Write-Log -LogLevel "Debug" -LogMessage "Project set to $Project"
 
-    # Define the archive name
-    $Archive = "$Project-$Target.zip"
+    # Define the full archive name
+    $Archive = "$OutputDir/$Project-$Target.zip"
 
     # Define the release directory
     $Release = "target/$Target/release"
@@ -793,6 +813,19 @@ Process {
     Write-Log -LogLevel "Information" -LogMessage "$ScriptName has started"
 
     Try {
+
+        # Make sure the output directory exists
+        If ( -not ( Test-Path -PathType Container -Path "$OutputDir" ) ) {
+
+            Write-Log -LogLevel "Information" -LogMessage "Creating output directory $OutputDir"
+
+            If ( $PScmdlet.ShouldProcess( "Directory", "Create Output Directory" ) ) {
+
+                New-Item -ItemType Directory -Path "$OutputDir" | Out-Null
+
+            }
+
+        }
 
         # If the zip archive already exists, abort
         If ( Test-Path "$Archive" ) {

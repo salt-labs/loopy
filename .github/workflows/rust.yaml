@@ -149,7 +149,6 @@ jobs:
             libpq-dev \
             libssl-dev \
             libtool \
-            linux-headers-amd64 \
             make \
             pkg-config \
             pkgconf \

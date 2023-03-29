@@ -28,7 +28,7 @@ log = "0.4"
 magic = "0.13.0"
 magic-sys = "0.3.0"
 #openssl-sys = "0.9.70"
-openssl = { version = "=0.10.33", features = ["vendored"] }
+openssl = { version = "0.10.48", features = ["vendored"] }
 rand = "0.8"
 reqwest = { version = "0.11", features = ["stream", "blocking", "json"] }
 serde = { version = "1.0", features = ["derive"] }

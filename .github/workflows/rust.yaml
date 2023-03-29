@@ -128,10 +128,10 @@ jobs:
 
       - id: setup_rust_musl
         name: Setup the Rust environment for MUSL
-        if: matrix.target == 'x86_64-unknown-linux-musl'
+        if: matrix.target == 'x86_64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
-          sudo apt install -y musl-tools && matrix.os == 'ubuntu-latest'
+          sudo apt install -y musl-tools
 
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows

@@ -78,3 +78,36 @@ Once that's done you can add the `vendor` folder to the PATH of your current she
 ```bash
 export PATH=$(pwd)/vendor:$PATH
 ```
+
+## Development
+
+There are a number of packages required for development.
+
+You can either use the DevShell contained within this repositories Nix flake or install some of the following packages depending on your Operating System.
+
+```bash
+# CentOS
+yum install \
+    autoconf \
+    clang \
+    cmake \
+    file-devel \
+    gcc \
+    git \
+    make \
+    openssl \
+    openssl-devel
+
+# Ubuntu
+sudo apt update
+sudo apt install -y \
+    autoconf \
+    clang \
+    cmake \
+    gcc \
+    git \
+    libmagic-dev \
+    libssl-dev \
+    make \
+    openssl
+```

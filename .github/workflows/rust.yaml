@@ -148,6 +148,7 @@ jobs:
             gcc \
             git \
             libgcc1 \
+            libgcc-7-dev \
             libmagic-dev \
             libpq-dev \
             libssl-dev \
@@ -156,6 +157,9 @@ jobs:
             pkgconf \
             xutils-dev \
             zlib1g-dev
+          # TODO: Remove debug.
+          sudo updatedb || true
+          locate libgcc_s.so.1 || true
 
       - id: setup_rust_arm64
         name: Setup the Rust environment for ARM64

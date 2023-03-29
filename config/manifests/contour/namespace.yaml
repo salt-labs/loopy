@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: projectcontour
+  name: contour
   labels:
     app: contour
     vendor: vmware

@@ -50,9 +50,11 @@ dependencies:
       - name: nfs-server-provisioner
         repo: nfs-ganesha
         namespace: nfs-server
+        values: values-kind.yaml
       - name: postgresql-ha
         repo: bitnami
         namespace: postgresql
+        values: values-kind.yaml
 
 application:
   manifests:

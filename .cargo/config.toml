@@ -1,17 +1,15 @@
-
 # rustc --print target-list
 
 ##################################################
 [build]
 ##################################################
 
-#rustflags = ["-C", "target-feature=-crt-static", "-C", "link-args=-static"]
+rustflags = ["-C", "target-feature=-crt-static", "-C", "link-args=-static"]
 
 ##################################################
 [target.x86_64-apple-darwin]
 ##################################################
 
-#rustflags = ["-C", "target-feature=-crt-static", "-C", "link-args=-static"]
 
 ##################################################
 [target.x86_64-unknown-linux-gnu]
@@ -19,15 +17,13 @@
 
 linker = "gcc"
 
-#rustflags = ["-C", "target-feature=-crt-static", "-C", "link-args=-static"]
-
 ##################################################
 [target.x86_64-unknown-linux-musl]
 ##################################################
 
 linker = "musl-gcc"
 
-#rustflags = ["-C", "target-feature=-crt-static", "-C", "link-args=-static"]
+rustflags = ["-C", "link-args=-lmagic"]
 
 ##################################################
 [target.armv7-unknown-linux-musleabihf]
@@ -35,18 +31,13 @@ linker = "musl-gcc"
 
 linker = "arm-linux-gnueabihf-gcc"
 
-#rustflags = ["-C", "target-feature=-crt-static", "-C", "link-args=-static"]
-
 ##################################################
 [target.x86_64-pc-windows-msvc]
 ##################################################
 
-#rustflags = ["-C", "target-feature=-crt-static", "-C", "link-args=-static"]
 
 ##################################################
 [target.aarch64-unknown-linux-gnu]
 ##################################################
 
 linker = "aarch64-linux-gnu-gcc"
-
-#rustflags = ["-C", "target-feature=-crt-static", "-C", "link-args=-static"]

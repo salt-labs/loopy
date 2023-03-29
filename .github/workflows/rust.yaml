@@ -146,7 +146,6 @@ jobs:
             curl \
             file \
             gcc \
-            gcc++ \
             git \
             libgcc1 \
             libmagic-dev \

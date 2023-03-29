@@ -141,12 +141,14 @@ jobs:
             automake \
             build-essential \
             ca-certificates \
+            clang \
             cmake \
             curl \
             file \
             gcc \
-            libgcc1 \
+            gcc++ \
             git \
+            libgcc1 \
             libmagic-dev \
             libpq-dev \
             libssl-dev \

@@ -20,19 +20,16 @@ dependencies:
     - name: metallb
       url: https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
       dir: metallb
-    ## Ingress option A
     - name: contour
       dir: contour
-    ## Ingress option B
-    #- name: contour-gateway
-    #  url: https://projectcontour.io/quickstart/contour-gateway-provisioner.yaml
-    #  dir: contour-gateway
+    - name: cert-manager
+      dir: cert-manager
+    - name: nfs-server-provisioner
+      dir: nfs-server-provisioner
+    - name: postgresql-ha
+      dir: postgresql-ha
     - name: test
       dir: test
-    #- name: postgresql-ha
-    #  dir: postgresql-ha
-    #- name: nfs-server-provisioner
-    #  dir: nfs-server-provisioner
 
   helm:
     repositories:
@@ -50,10 +47,10 @@ dependencies:
         repo: bitnami
         namespace: contour
         values: values-http.yaml
-      #- name: postgresql-ha
-      #  repo: bitnami
-      #- name: nfs-server-provisioner
-      #  repo: nfs-ganesha
+      - name: nfs-server-provisioner
+        repo: nfs-ganesha
+      - name: postgresql-ha
+        repo: bitnami
 
 application:
   manifests:

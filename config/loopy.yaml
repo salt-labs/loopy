@@ -54,41 +54,9 @@ dependencies:
 
 application:
   manifests:
-    #- name: ca
-    #  dir: certificate-authority
-    - name: bamboo
-      dir: bamboo
-    - name: bamboo-agent
-      dir: bamboo-agent
-    - name: bitbucket
-      dir: bitbucket
-    - name: confluence
-      dir: confluence
-    - name: crowd
-      dir: crowd
-    - name: jira
-      dir: jira
+    - name: cert-authority
+      dir: cert-authority
 
   helm:
     repositories:
-      - name: atlassian
-        url: https://atlassian.github.io/data-center-helm-charts
-
     charts:
-      - name: bamboo
-        repo: atlassian
-        values: values-http.yaml
-      #- name: bamboo-agent
-      #  repo: atlassian
-      - name: bitbucket
-        repo: atlassian
-        values: values-http.yaml
-      - name: confluence
-        repo: atlassian
-        values: values-http.yaml
-      - name: crowd
-        repo: atlassian
-        values: values-http.yaml
-      - name: jira
-        repo: atlassian
-        values: values-http.yaml

@@ -150,7 +150,6 @@ jobs:
             libssl-dev \
             libtool \
             make \
-            pkg-config \
             pkgconf \
             xutils-dev \
             zlib1g-dev
@@ -173,7 +172,7 @@ jobs:
         name: Setup the Rust environment for MacOS
         if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
         run: |
-          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar zlib zstd
+          brew install libmagic openssl pkgconf bzip2 figlet file gnu-tar zlib zstd
 
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows

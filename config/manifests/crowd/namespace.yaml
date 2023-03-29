@@ -1,9 +1,0 @@
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: crowd
-  labels:
-    app: crowd
-    vendor: atlassian
-    category: identity-management

@@ -17,7 +17,7 @@ rustPlatform.buildRustPackage {
   nativeBuildInputs = with pkgs; [
     rustc
     cargo
-    pkg-config
+    pkgconf
     cmake
 
     bzip2

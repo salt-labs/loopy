@@ -47,7 +47,7 @@ in
           rustup
           trunk
           openssl
-          pkg-config
+          pkgconf
           (rustProfile.withComponents cargoComponents)
 
           # Other

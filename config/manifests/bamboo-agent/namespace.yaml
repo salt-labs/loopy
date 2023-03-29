@@ -1,9 +1,0 @@
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: bamboo-agent
-  labels:
-    app: bamboo-agent
-    vendor: atlassian
-    category: continuous-integration

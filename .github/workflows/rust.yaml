@@ -67,9 +67,9 @@ jobs:
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
             toolchain: stable
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            toolchain: stable
+          #- target: x86_64-apple-darwin
+          #  os: macos-latest
+          #  toolchain: stable
           # - target: x86_64-pc-windows-msvc
           #   os: windows-latest
           #   toolchain: stable
@@ -144,7 +144,8 @@ jobs:
             cmake \
             curl \
             file \
-            g++ \
+            gcc \
+            libgcc1 \
             git \
             libmagic-dev \
             libpq-dev \

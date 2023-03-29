@@ -80,7 +80,7 @@ jobs:
     steps:
       - id: setup_rust
         name: Setup the Rust environment
-        uses: actions-rs/toolchain@v2
+        uses: actions-rs/toolchain@v1
         with:
           target: ${{ matrix.target }}
           toolchain: ${{ matrix.toolchain }}

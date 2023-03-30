@@ -286,7 +286,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 helm_chart("uninstall", chart).context(err_msg)?;
                 println!("Successfully uninstalled Helm chart: {}", chart.name);
             }
-            
+
             // Remove all Kubernetes manifests (applications)
             if config_loaded.application.manifests.is_empty() {
                 println!(
@@ -326,7 +326,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     kubectl_delete_manifest(manifest).await.context(err_msg)?;
                 }
             }
-            
+
             // Remove all Helm repositories (applications)
             for repo in &config_loaded.application.helm.repositories {
                 println!("Removing Helm repository: {}", repo.name);

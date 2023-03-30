@@ -286,6 +286,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 helm_chart("uninstall", chart).context(err_msg)?;
                 println!("Successfully uninstalled Helm chart: {}", chart.name);
             }
+            
+            // Remove all Kubernetes manifests (applications)
+            if config_loaded.application.manifests.is_empty() {
+                println!(
+                    "No Kubernetes application manifests were defined in the config, skipping."
+                );
+            } else {
+                for manifest in &config_loaded.application.manifests {
+                    println!("Removing Kubernetes manifests for: {}", manifest.name);
+                    let err_msg = format!(
+                        "Failed to remove Kubernetes manifests for {}",
+                        manifest.name
+                    );
+                    kubectl_delete_manifest(manifest).await.context(err_msg)?;
+                }
+            }
 
             // Uninstall all Helm releases (dependencies)
             for chart in &config_loaded.dependencies.helm.charts {
@@ -295,6 +311,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!("Successfully uninstalled Helm chart: {}", chart.name);
             }
 
+            // Remove all Kubernetes manifests (dependencies)
+            if config_loaded.dependencies.manifests.is_empty() {
+                println!(
+                    "No Kubernetes dependency manifests were defined in the config, skipping."
+                );
+            } else {
+                for manifest in &config_loaded.dependencies.manifests {
+                    println!("Removing Kubernetes manifests for: {}", manifest.name);
+                    let err_msg = format!(
+                        "Failed to remove Kubernetes manifests for {}",
+                        manifest.name
+                    );
+                    kubectl_delete_manifest(manifest).await.context(err_msg)?;
+                }
+            }
+            
             // Remove all Helm repositories (applications)
             for repo in &config_loaded.application.helm.repositories {
                 println!("Removing Helm repository: {}", repo.name);
@@ -313,38 +345,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .await
                     .context(err_msg)?;
                 println!("Successfully removed Helm repository: {}", repo.name);
-            }
-
-            // Remove all Kubernetes manifests (applications)
-            if config_loaded.application.manifests.is_empty() {
-                println!(
-                    "No Kubernetes application manifests were defined in the config, skipping."
-                );
-            } else {
-                for manifest in &config_loaded.application.manifests {
-                    println!("Removing Kubernetes manifests for: {}", manifest.name);
-                    let err_msg = format!(
-                        "Failed to remove Kubernetes manifests for {}",
-                        manifest.name
-                    );
-                    kubectl_delete_manifest(manifest).await.context(err_msg)?;
-                }
-            }
-
-            // Remove all Kubernetes manifests (dependencies)
-            if config_loaded.dependencies.manifests.is_empty() {
-                println!(
-                    "No Kubernetes dependency manifests were defined in the config, skipping."
-                );
-            } else {
-                for manifest in &config_loaded.dependencies.manifests {
-                    println!("Removing Kubernetes manifests for: {}", manifest.name);
-                    let err_msg = format!(
-                        "Failed to remove Kubernetes manifests for {}",
-                        manifest.name
-                    );
-                    kubectl_delete_manifest(manifest).await.context(err_msg)?;
-                }
             }
 
             // Delete the loopy namespace.

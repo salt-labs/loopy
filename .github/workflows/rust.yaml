@@ -67,15 +67,15 @@ jobs:
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
             toolchain: stable
-          #- target: x86_64-apple-darwin
-          #  os: macos-latest
-          #  toolchain: stable
-          # - target: x86_64-pc-windows-msvc
-          #   os: windows-latest
-          #   toolchain: stable
-          # - target: aarch64-unknown-linux-gnu
-          #   os: ubuntu-latest
-          #   toolchain: stable
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            toolchain: stable
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            toolchain: stable
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            toolchain: stable
 
     steps:
       - id: setup_rust
@@ -149,6 +149,7 @@ jobs:
             g++ \
             git \
             libgcc1 \
+            libmagic1 \
             libmagic-dev \
             libpq-dev \
             libssl-dev \
@@ -194,14 +195,16 @@ jobs:
           #VCPKG_DEFAULT_TRIPLET: "x64-windows-static" # (libcmt.lib)
           VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md" # (msvcrt.lib)
         run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          Push-Location -Path "vcpkg"
-          Start-Process ".\bootstrap-vcpkg.bat"
-          vcpkg.exe install curl:${env:VCPKG_DEFAULT_TRIPLET} libmagic:${env:VCPKG_DEFAULT_TRIPLET} openssl:${env:VCPKG_DEFAULT_TRIPLET} zlib:${env:VCPKG_DEFAULT_TRIPLET}
-          vcpkg.exe integrate install
-          Pop-Location
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
-          tree /F ${env:VCPKG_INSTALLED}
+          #git clone https://github.com/microsoft/vcpkg.git
+          #Push-Location -Path "vcpkg"
+          #Start-Process ".\bootstrap-vcpkg.bat"
+          #vcpkg.exe install curl:${env:VCPKG_DEFAULT_TRIPLET} libmagic:${env:VCPKG_DEFAULT_TRIPLET} openssl:${env:VCPKG_DEFAULT_TRIPLET} zlib:${env:VCPKG_DEFAULT_TRIPLET}
+          #vcpkg.exe integrate install
+          #Pop-Location
+          #choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
+          #tree /F ${env:VCPKG_INSTALLED}
+          cargo install cargo-vcpkg
+          cargo vcpkg build
 
       - id: cargo_check
         name: Run Cargo check
@@ -210,7 +213,14 @@ jobs:
           cargo --version
           cargo check --verbose
 
-      - id: cargo_check_windows
+      - id: cargo_check_windows_1
+        name: Run Cargo check (Windows)
+        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        run: |
+          cargo --version
+          cargo check --verbose
+
+      - id: cargo_check_windows_2
         name: Run Cargo check (Windows)
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
         shell: powershell

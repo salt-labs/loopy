@@ -60,6 +60,8 @@ in
           xxd
           zlib
           zstd
+          gcc
+          clang
         ];
 
         env = {

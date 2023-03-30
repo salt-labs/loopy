@@ -109,5 +109,6 @@ sudo apt install -y \
     libmagic-dev \
     libssl-dev \
     make \
-    openssl
+    openssl \
+    zstd
 ```

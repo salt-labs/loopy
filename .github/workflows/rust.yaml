@@ -149,7 +149,6 @@ jobs:
             g++ \
             git \
             libgcc1 \
-            libgcc-7-dev \
             libmagic-dev \
             libpq-dev \
             libssl-dev \

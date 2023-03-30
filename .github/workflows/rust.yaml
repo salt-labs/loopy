@@ -182,9 +182,7 @@ jobs:
         if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
         run: |
           brew update
-          brew unlink pkg-config
-          brew link --overwrite pkgconf
-          brew install libmagic openssl pkgconf bzip2 figlet file gnu-tar zlib zstd
+          brew install libmagic openssl pkgconf bzip2 figlet file gnu-tar zlib zstd pkg-config
 
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows
@@ -204,23 +202,16 @@ jobs:
           #choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
           #tree /F ${env:VCPKG_INSTALLED}
           cargo install cargo-vcpkg
-          cargo vcpkg build
+          cargo vcpkg --verbose build
 
       - id: cargo_check
         name: Run Cargo check
-        if: matrix.target != 'x86_64-pc-windows-msvc'
+        #if: matrix.target != 'x86_64-pc-windows-msvc'
         run: |
           cargo --version
           cargo check --verbose
 
-      - id: cargo_check_windows_1
-        name: Run Cargo check (Windows)
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
-        run: |
-          cargo --version
-          cargo check --verbose
-
-      - id: cargo_check_windows_2
+      - id: cargo_check_windows
         name: Run Cargo check (Windows)
         if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
         shell: powershell

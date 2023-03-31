@@ -297,12 +297,19 @@ jobs:
           $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
           cargo build --verbose --target ${{ matrix.target }}
 
-      - id: cargo_test
-        name: Run Cargo tests
-        if: matrix.target != 'x86_64-pc-windows-msvc'
+      - id: cargo_test_macos
+        name: Run Cargo tests (macOS)
+        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
         run: |
           cargo --version
           cargo test --verbose --target ${{ matrix.target }}
+
+      - id: cargo_test_linux
+        name: Run Cargo tests
+        if: matrix.target != 'x86_64-pc-windows-msvc' && matrix.os != 'macos-latest'
+        run: |
+          cargo --version
+          cargo test --verbose
 
       - id: cargo_test_windows
         name: Run Cargo tests (Windows)

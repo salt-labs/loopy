@@ -15,21 +15,22 @@ dependencies:
     - name: kind
       bin: kind
       url: https://github.com/kubernetes-sigs/kind/releases/download/v0.17.0/kind-linux-amd64
+    - name: cmctl
+      bin: cmctl
+      url: https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cmctl-linux-amd64.tar.gz
 
   manifests:
     - name: metallb
       url: https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
       dir: metallb
-    - name: contour
-      dir: contour
     - name: cert-manager
       dir: cert-manager
-    - name: nfs-server-provisioner
-      dir: nfs-server-provisioner
+    - name: contour
+      dir: contour
+    - name: nfs-server
+      dir: nfs-server
     - name: postgresql-ha
       dir: postgresql-ha
-    - name: test
-      dir: test
 
   helm:
     repositories:
@@ -43,9 +44,11 @@ dependencies:
         url: https://projects.registry.vmware.com/chartrepo/ako
 
     charts:
+      - name: cert-manager
+        repo: bitnami
+        values: values-kind.yaml
       - name: contour
         repo: bitnami
-        namespace: contour
         values: values-kind.yaml
       - name: nfs-server-provisioner
         repo: nfs-ganesha
@@ -56,11 +59,31 @@ dependencies:
         namespace: postgresql
         values: values-kind.yaml
 
+  tests:
+    - command: echo "test"
+      stdout: "test"
+      stderr: ""
+    - command: kubectl get ns cert-manager
+      stdout: "cert-manager"
+      stderr: ""
+
 application:
   manifests:
     - name: cert-authority
       dir: cert-authority
+    - name: test
+      dir: test
 
   helm:
     repositories:
     charts:
+
+  tests:
+    - command: echo "test"
+      stdout: "test"
+      stderr: ""
+      status: 0
+    - command: kubectl get ns cert-manager
+      stdout: "cert-manager"
+      stderr: ""
+      status: 0

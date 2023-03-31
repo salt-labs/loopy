@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: certificate-authority
+  name: cert-authority
   labels:
     app: certificate-authority
     vendor: salt-labs

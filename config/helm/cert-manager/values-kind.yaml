@@ -27,6 +27,9 @@ installCRDs: true
 
 replicaCount: 1
 
+startupapicheck:
+  timeout: 5m
+
 controller:
   replicaCount: 1
   image:
@@ -248,6 +251,10 @@ webhook:
     automountServiceAccountToken: true
 
   hostNetwork: false
+
+  # EKS with Antrea
+  #hostNetwork: true
+  #securePort: 10260
 
 cainjector:
   replicaCount: 1

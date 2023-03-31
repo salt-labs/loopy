@@ -1,6 +1,6 @@
 //! Fortune Cookie
 //!
-//! This module provides a function to generate a random fortune cookie message.
+//! This module provides a function to generate a random fortune message.
 //!
 
 use anyhow::{anyhow, Result};

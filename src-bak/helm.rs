@@ -3,7 +3,7 @@
 //! This module contains functions for installing and uninstalling Helm charts and repositories.
 //!
 
-use crate::config::Chart;
+use crate::config::{Chart, Repository};
 use crate::utils::run_command;
 
 use anyhow::{Context, Result};
@@ -484,6 +484,65 @@ fn helm_prepare_chart(name: &str, repo: &str) -> Result<()> {
         file.write_all(stdout.as_bytes()).context(err_msg)?;
     }
 
+    Ok(())
+}
+
+/// Process Helm Repositories
+///
+/// # Arguments
+///
+/// * `repos` - The list of Helm repositories to process
+/// * `action` - The action to perform on the Helm repositories
+///
+/// # Examples
+///
+/// ```rust
+/// use loopy::helm::helm_process_repositories;
+/// let result = helm_process_repositories(&[], "update");
+/// assert!(result.is_ok());
+/// ```
+///
+pub async fn helm_process_repos(repos: &[Repository], action: &str) -> Result<()> {
+    for repo in repos {
+        let err_message = format!("Failed to {} Helm repository: {}", action, repo.name);
+        println!("{} Helm repository: {}", action, repo.name);
+        helm_repo(action, Some(&repo.name), Some(&repo.url))
+            .await
+            .context(err_message)?;
+        println!("Successfully {} Helm repository: {}", action, repo.name);
+    }
+    Ok(())
+}
+
+/// Process Helm Charts
+///
+/// # Arguments
+///
+/// * `charts` - The list of Helm charts to process
+/// * `action` - The action to perform on the Helm charts
+///
+/// # Examples
+///
+/// ```rust
+/// use loopy::helm::helm_process_charts;
+/// let result = helm_process_charts(&[], "install");
+/// assert!(result.is_ok());
+/// ```
+///
+pub async fn helm_process_charts(charts: &[Chart], action: &str) -> Result<()> {
+    if charts.is_empty() {
+        println!(
+            "No Helm chart {} were found in the configuration file. Skipping...",
+            action
+        );
+    } else {
+        for chart in charts {
+            println!("{} Helm chart: {}", action, chart.name);
+            let err_msg = format!("Failed to {} Helm chart {}", action, chart.name);
+            helm_chart(action, chart).context(err_msg)?;
+            println!("Successfully {} Helm chart: {}", action, chart.name);
+        }
+    }
     Ok(())
 }
 

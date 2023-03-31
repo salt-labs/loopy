@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: nfs-server-provisioner
+  name: nfs-server
   labels:
     app: nfs-server-provisioner
     vendor: kubernetes-incubator

@@ -36,6 +36,7 @@ pub struct Dependencies {
     pub helm: Helm,
     pub manifests: Vec<Manifests>,
     pub tools: Vec<Tool>,
+    pub tests: Vec<Test>,
 }
 
 /// Application configuration structure.
@@ -44,6 +45,7 @@ pub struct Application {
     //pub carvel: Carvel,
     pub helm: Helm,
     pub manifests: Vec<Manifests>,
+    pub tests: Vec<Test>,
 }
 
 /// Tool configuration structure.
@@ -55,6 +57,19 @@ pub struct Tool {
     pub bin: String,
     /// Optional tool URL.
     pub url: Option<String>,
+}
+
+/// Test configuration structure.
+#[derive(Debug, Deserialize)]
+pub struct Test {
+    /// Test command.
+    pub command: String,
+    /// stdout
+    pub stdout: Option<String>,
+    /// stderr
+    pub stderr: Option<String>,
+    /// status
+    pub status: Option<i32>,
 }
 
 /// Manifests configuration structure.
@@ -169,6 +184,15 @@ fn validate_config(config: &Config) -> Result<()> {
         }
     }
 
+    // Validate dependencies.tests
+    for test in &config.dependencies.tests {
+        // Ensure that the command field of each test is not empty.
+        let err_msg = "The 'command' field of all defined tests cannot be empty.".to_string();
+        if test.command.trim().is_empty() {
+            anyhow::bail!(err_msg);
+        }
+    }
+
     // Validate dependencies.manifests
     for manifest in &config.dependencies.manifests {
         // Ensure that the name field of each manifest is not empty.
@@ -220,6 +244,15 @@ fn validate_config(config: &Config) -> Result<()> {
         }
 
         // The values field is optional.
+    }
+
+    // Validate application.tests
+    for test in &config.application.tests {
+        // Ensure that the command field of each test is not empty.
+        let err_msg = "The 'command' field of all defined tests cannot be empty.".to_string();
+        if test.command.trim().is_empty() {
+            anyhow::bail!(err_msg);
+        }
     }
 
     // Validate application.manifests

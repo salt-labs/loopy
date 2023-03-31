@@ -7,3 +7,4 @@ metadata:
     app: cert-manager
     vendor: jetstack
     category: certificate-management
+    cert-manager.io/disable-validation: "true"

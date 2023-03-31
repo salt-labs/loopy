@@ -46,7 +46,7 @@ publish = true
 #serde = "1.0.158"
 #serde_json = "1.0.94"
 
-#[package.metadata.vcpkg]
-#git = "https://github.com/microsoft/vcpkg"
-#rev = "master"
-#dependencies = ["curl", "libmagic", "openssl", "zlib"]
+[package.metadata.vcpkg]
+git = "https://github.com/microsoft/vcpkg"
+rev = "master"
+dependencies = ["curl", "libmagic", "openssl", "zlib"]

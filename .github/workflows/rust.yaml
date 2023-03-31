@@ -61,23 +61,23 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            toolchain: stable
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             toolchain: stable
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
             toolchain: stable
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            toolchain: stable
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            toolchain: stable
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             toolchain: stable
-          - target: aaarch64-unix-linux-musl
+          - target: aarch64-unknown-linux-musl
             os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
             toolchain: stable
 
     steps:

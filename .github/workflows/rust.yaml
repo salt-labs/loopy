@@ -76,6 +76,9 @@ jobs:
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             toolchain: stable
+          - target: aaarch64-unix-linux-musl
+            os: ubuntu-latest
+            toolchain: stable
 
     steps:
       - id: setup_rust
@@ -163,18 +166,27 @@ jobs:
           sudo updatedb || true
           locate libgcc_s.so.1 || true
 
-      - id: setup_rust_arm64
+      - id: setup_rust_arm64_gnu
         name: Setup the Rust environment for ARM64
         if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
           sudo apt install -y \
-            gcc-multilib \
-            g++-multilib \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu
+            #gcc-multilib
+            #g++-multilib
 
-      - id: setup_rust_musl
+      - id: setup_rust_arm64_musl
+        name: Setup the Rust environment for ARM64
+        if: matrix.target == 'aarch64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            musl-tools \
+            musl-dev
+
+      - id: setup_rust_amd64_musl
         name: Setup the Rust environment for MUSL
         if: matrix.target == 'x86_64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         run: |

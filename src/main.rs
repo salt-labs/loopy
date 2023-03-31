@@ -233,6 +233,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("Successfully installed Helm chart: {}", chart.name);
                 }
             }
+            
+            match pause("Dependency installation complete. Press ENTER to continue with application installation or any other key to exit.") {
+                Ok(_) => {
+                    debug!("User pressed ENTER, continuing with installation.");
+                }
+                Err(_) => {
+                    println!("Exiting at user request.");
+                    std::process::exit(0);
+                }
+            }
 
             // Install all Manifests (applications)
             if config_loaded.application.manifests.is_empty() {
@@ -275,16 +285,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .await
                 .context(err_msg)?;
 
-            match pause("Dependency installation complete. Press ENTER to continue or any other key to exit.") {
-                Ok(_) => {
-                    debug!("User pressed ENTER, continuing with installation.");
-                }
-                Err(_) => {
-                    println!("Exiting at user request.");
-                    std::process::exit(0);
-                }
-
-            }
         }
 
         Some("uninstall") => {

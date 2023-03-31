@@ -21,6 +21,7 @@ linker = "gcc"
 ##################################################
 
 linker = "rust-lld"
+
 rustflags = ["-C", "target-feature=+crt-static"]
 
 ##################################################
@@ -47,5 +48,6 @@ rustflags = ["-C", "target-feature=+crt-static"]
 [target.aarch64-unknown-linux-gnu]
 ##################################################
 
-linker = "aarch64-linux-gnu-gcc"
+linker = "rust-lld"
+
 rustflags = ["-C", "target-feature=+crt-static"]

@@ -4,7 +4,17 @@
 //!
 
 use anyhow::{anyhow, Context, Result};
-use crossterm::style::{self, Color, Stylize};
+use crossterm::{
+    event::{
+        self,
+        Event,
+        KeyCode
+    },
+    terminal,
+    style::{
+        self, Color, Stylize
+    }
+};
 use figlet_rs::FIGfont;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
@@ -13,7 +23,7 @@ use log::{debug, error, info};
 use reqwest::Client;
 use std::env;
 use std::fs::{self, create_dir_all, File};
-use std::io::{self, BufReader, Read, Seek, SeekFrom, Write};
+use std::io::{self, stdout, BufReader, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tar::Archive;
@@ -93,6 +103,48 @@ pub fn create_dir(dir: &PathBuf) -> Result<()> {
             Err(e.into())
         }
     }
+}
+
+/// Pause
+/// 
+/// Waits for a user to continue.
+/// 
+pub fn pause(message: &str) -> Result<()> {
+    
+    // Display the message to stdout
+    println!("{}", message);
+    stdout().flush()?;
+
+    // Enable raw mode
+    let err_msg = "Failed to enable terminal raw mode";
+    let _raw = terminal::enable_raw_mode().context(err_msg);
+
+    // Read the next event
+    let event = event::read()?;
+
+    // Disable raw mode
+    let err_msg = "Failed to disable terminal raw mode";
+    terminal::disable_raw_mode().context(err_msg)?;
+
+    // Check if the event was the ENTER key
+    if let Event::Key(key_event) = event {
+        if key_event.code == KeyCode::Enter {
+            Ok(())
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "User cancelled.",
+            )
+            .into())
+        }
+    } else {
+        Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "Unexpected input event",
+        )
+        .into())
+    }
+    
 }
 
 /// figlet

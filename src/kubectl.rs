@@ -188,7 +188,7 @@ async fn kubectl_manifests(
             10
         } else {
             debug!("Namespace {} does not exist", PACKAGE_NAME);
-            60
+            30
         };
 
         // TODO: Fix more jankiness

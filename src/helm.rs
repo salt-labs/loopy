@@ -341,6 +341,8 @@ fn helm_install_chart(
                 "--namespace",
                 namespace,
                 "--wait",
+                "--timeout",
+                "10m0s",
                 &format!("{}/{}", repo, name),
             ],
         )
@@ -366,6 +368,8 @@ fn helm_install_chart(
                 namespace,
                 "--create-namespace",
                 "--wait",
+                "--timeout",
+                "10m0s",
                 &format!("{}/{}", repo, name),
             ],
         )

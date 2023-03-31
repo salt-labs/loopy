@@ -24,7 +24,7 @@ use crate::fortune::show_fortune;
 use crate::helm::{helm_chart, helm_repo};
 use crate::kubectl::{kubectl_apply_manifest, kubectl_delete_manifest, kubectl_namespace};
 use crate::utils::{
-    check_command_in_path, create_dir, download_tool, figlet, run_command, update_path,
+    pause, check_command_in_path, create_dir, download_tool, figlet, run_command, update_path,
 };
 use anyhow::{Context, Result};
 use log::{debug, info, warn, LevelFilter};
@@ -274,6 +274,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             kubectl_namespace("create", PACKAGE_NAME)
                 .await
                 .context(err_msg)?;
+
+            match pause("Dependency installation complete. Press ENTER to continue or any other key to exit.") {
+                Ok(_) => {
+                    debug!("User pressed ENTER, continuing with installation.");
+                }
+                Err(_) => {
+                    println!("Exiting at user request.");
+                    std::process::exit(0);
+                }
+
+            }
         }
 
         Some("uninstall") => {

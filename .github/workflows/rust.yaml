@@ -182,7 +182,7 @@ jobs:
         if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
         run: |
           brew update
-          brew install libmagic openssl pkgconf bzip2 figlet file gnu-tar zlib zstd pkg-config
+          brew install libmagic openssl bzip2 figlet file gnu-tar zlib zstd pkg-config
 
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows

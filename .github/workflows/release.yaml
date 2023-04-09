@@ -91,7 +91,7 @@ jobs:
           github.event_name == 'push' &&
           github.ref == 'refs/heads/${{ env.BRANCH_NAME_DEFAULT}}' &&
           github.event.workflow_run.conclusion == 'success' &&
-          steps.check_tags.outputs.CREATE_TAG == 'true' &&
+          steps.check_tags.outputs.CREATE_TAG == 'true'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: false
@@ -101,6 +101,9 @@ jobs:
           files: |
             artifacts/*
           fail_on_unmatched_files: true
+
+    outputs:
+      release_id: ${{ steps.create_release.outputs.id }}
 
   #########################
   # Publish the the Rust app (crates.io)
@@ -148,7 +151,10 @@ jobs:
 
       - id: upload_release_artifact_crates_io
         name: Upload Rust application to crates.io
-        if: github.event_name == 'push' && contains( github.ref, 'trunk' )
+        if: >-
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/${{ env.BRANCH_NAME_DEFAULT}}' &&
+          needs.create_release.outputs.release_id != ''
         run: >
           cargo publish
           --token ${{ secrets.PAT_CRATES_IO }}

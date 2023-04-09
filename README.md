@@ -4,7 +4,9 @@
 
 A Kubernetes packaging helper utility that tries to prevent you from going [loopy](https://www.urbandictionary.com/define.php?term=Loopy).
 
-It's useful for those times when you find yourself testing the same [inner loop](https://tanzu.vmware.com/developer/tv/talk/118/) like repeatedly installing and upgrading the same set of Helm charts on a `kind` cluster after only a couple lines of changes to a values file.
+Loopy is useful for those times when you find yourself testing the same [inner loop](https://tanzu.vmware.com/developer/tv/talk/118/) during development.
+
+If you find yourself installing and upgrading the same set of Helm charts on a `kind` cluster after only a couple lines of changes to a values file this too l might help you.
 
 ![loopy](./docs/images/loopy.gif)
 

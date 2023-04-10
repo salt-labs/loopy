@@ -1,0 +1,62 @@
+# rustc --print target-list
+
+[target.x86_64-apple-darwin]
+
+linker = "clang"
+rustflags = ["-C", "link-arg=-Wl,-dead_strip"]
+
+[target.x86_64-unknown-linux-gnu]
+
+linker = "clang"
+rustflags = ["-C", "link-arg=-Wl,--gc-sections"]
+
+[target.x86_64-unknown-linux-musl]
+
+linker = "clang"
+rustflags = [
+	"-C",
+	"link-arg=-Wl,--gc-sections",
+	"-C",
+	"link-arg=-static",
+	"-C",
+	"link-arg=-lc",
+]
+
+[target.aarch64-unknown-linux-gnu]
+
+linker = "clang"
+rustflags = ["-C", "link-arg=-Wl,--gc-sections"]
+
+[target.aarch64-unknown-linux-musl]
+
+linker = "clang"
+rustflags = [
+	"-C",
+	"link-arg=-Wl,--gc-sections",
+	"-C",
+	"link-arg=-static",
+	"-C",
+	"link-arg=-lc",
+]
+
+[target.aarch64-linux-android]
+
+linker = "clang"
+rustflags = ["-C", "link-arg=-Wl,--gc-sections"]
+
+[target.x86_64-pc-windows-gnu]
+
+linker = "clang"
+rustflags = ["-C", "link-arg=-Wl,--gc-sections"]
+
+[target.x86_64-pc-windows-msvc]
+
+linker = "link.exe"
+rustflags = [
+	"-C",
+	"link-arg=/OPT:REF",
+	"-C",
+	"link-arg=/OPT:ICF",
+	"-C",
+	"target-feature=+crt-static",
+]

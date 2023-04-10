@@ -70,20 +70,26 @@ jobs:
       fail-fast: true
       matrix:
         include:
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            toolchain: stable
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             toolchain: stable
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
             toolchain: stable
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            toolchain: stable
-          #- target: x86_64-pc-windows-msvc
-          #  os: windows-latest
-          #  toolchain: stable
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
+            toolchain: stable
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-pc-windows-gnu
+            os: windows-latest
+            toolchain: stable
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
             toolchain: stable
 
     steps:
@@ -97,8 +103,13 @@ jobs:
           timeoutSeconds: 1800
           intervalSeconds: 30
 
+      - id: matrix_conclusion
+        name: Store Matrix conclusions
+        run: |
+          echo "CONCLUSIONS[${{ matrix.target }}]: ${{ steps.wait_for_rust.outputs.conclusion }}" >> "${GITHUB_OUTPUT}"
+
     outputs:
-      conclusion: ${{ steps.wait_for_rust.outputs.conclusion }}
+      matrix_conclusions: ${{ toJson(steps.matrix_conclusion.outputs.CONCLUSIONS) }}
 
   comment:
     name: Thumbs
@@ -118,9 +129,14 @@ jobs:
           - ubuntu-latest
 
     steps:
+      - id: debug
+        name: DEBUG
+        run: |
+          echo "Conclusions: ${{ toJson(needs.wait_rust.outputs.matrix_conclusions) }}"
+
       - id: pr_comment_thumbs_up
         name: PR Comment (Thumbs Up)
-        if: ${{ needs.wait_linter.outputs.conclusion == 'success' && needs.wait_rust.outputs.conclusion == 'success' }}
+        if: ${{ needs.wait_linter.outputs.conclusion == 'success' && contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'success') }}
         uses: exercism/pr-commenter-action@v1.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -134,7 +150,7 @@ jobs:
 
       - id: pr_comment_thumbs_down
         name: PR Comment (Thumbs Down)
-        if: ${{ needs.wait_linter.outputs.conclusion != 'success' || needs.wait_rust.outputs.conclusion != 'success' }}
+        if: ${{ needs.wait_linter.outputs.conclusion == 'success' && !contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'success') }}
         uses: exercism/pr-commenter-action@v1.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -144,21 +144,23 @@ jobs:
           sudo apt install -y \
             autoconf \
             automake \
+            binutils \
             build-essential \
             ca-certificates \
             clang \
             cmake \
             curl \
             file \
-            gcc \
             g++ \
+            gcc \
             git \
             libgcc1 \
-            libmagic1 \
             libmagic-dev \
+            libmagic1 \
             libpq-dev \
             libssl-dev \
             libtool \
+            llvm \
             make \
             pkgconf \
             xutils-dev \

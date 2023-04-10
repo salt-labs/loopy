@@ -107,9 +107,11 @@ jobs:
         name: Store Matrix conclusions
         run: |
           echo "CONCLUSIONS[${{ matrix.target }}]=${{ steps.wait_for_rust.outputs.conclusion }}" >> "${GITHUB_OUTPUT}"
+          echo "CONCLUSIONS[${{ matrix.target }}]=${{ steps.wait_for_rust.outputs.conclusion }}" >> "${GITHUB_ENV}"
 
     outputs:
       matrix_conclusions: ${{ toJson(steps.matrix_conclusion.outputs.CONCLUSIONS) }}
+      matrix_conclusions2: ${{ toJson(env.CONCLUSIONS) }}
 
   comment:
     name: Thumbs
@@ -134,6 +136,9 @@ jobs:
         run: |
           echo "Conclusions to JSON: ${{ toJson(needs.wait_rust.outputs.matrix_conclusions) }}"
           echo "Conclusions from JSON: ${{ fromJson(needs.wait_rust.outputs.matrix_conclusions) }}"
+          echo "##########"
+          echo "Conclusions from JSON: ${{ toJson(needs.wait_rust.outputs.matrix_conclusions2) }}"
+          echo "Conclusions from JSON: ${{ fromJson(needs.wait_rust.outputs.matrix_conclusions2) }}"
 
       - id: pr_comment_thumbs_up
         name: PR Comment (Thumbs Up)

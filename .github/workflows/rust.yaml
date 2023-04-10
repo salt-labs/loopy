@@ -155,17 +155,15 @@ jobs:
             gcc \
             git \
             libc6-dev \
-            libgcc-7-dev \
+            libgcc-10-dev \
             libgcc1 \
-            libm-dev \
+            librust-libm-dev \
             libmagic-dev \
             libmagic1 \
             libpq-dev \
             libpthread-stubs0-dev \
-            librt-dev \
             libssl-dev \
             libtool \
-            libutil-linux-dev \
             lld \
             llvm \
             make \

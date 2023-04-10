@@ -206,5 +206,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: ${{ env.PROJECT }}-${{ matrix.target }}.zip
+          name: ${{ env.PROJECT }}-${{ matrix.target }}
           path: artifacts/${{ env.PROJECT }}-${{ matrix.target }}.zip
+          retention-days: 7

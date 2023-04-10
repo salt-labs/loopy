@@ -16,6 +16,7 @@ rustPlatform.buildRustPackage {
 
   # buildPlatform
   nativeBuildInputs = with pkgs; [
+    binutils
     bzip2
     cargo
     clang
@@ -24,6 +25,7 @@ rustPlatform.buildRustPackage {
     file
     gcc
     gnutar
+    lld
     openssl
     pkgconf
     rustc

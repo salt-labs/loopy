@@ -8,91 +8,42 @@
 [target.x86_64-apple-darwin]
 ##################################################
 
-linker = "clang"
-
-rustflags = ["-C", "link-arg=-Wl,-dead_strip"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-unknown-linux-gnu]
 ##################################################
 
-linker = "rust-lld"
+linker = "clang"
 
-rustflags = ["-C", "linker=rust-lld", "-C", "link-arg=-Wl,--gc-sections"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-unknown-linux-musl]
 ##################################################
 
-linker = "rust-lld"
-
-rustflags = [
-	"-C",
-	"linker=rust-lld",
-	"-C",
-	"link-arg=-Wl,--gc-sections",
-	"-C",
-	"link-arg=-static",
-	"-C",
-	"link-arg=-lc",
-]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.aarch64-unknown-linux-gnu]
 ##################################################
 
-linker = "aarch64-linux-gnu-gcc"
-
-rustflags = [
-	"-C",
-	"linker=aarch64-linux-gnu-gcc",
-	"-C",
-	"link-arg=-Wl,--gc-sections",
-]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.aarch64-unknown-linux-musl]
 ##################################################
 
-linker = "musl-gcc"
-
-rustflags = [
-	"-C",
-	"linker=musl-gcc",
-	"-C",
-	"link-arg=-Wl,--gc-sections",
-	"-C",
-	"link-arg=-static",
-	"-C",
-	"link-arg=-lc",
-]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-pc-windows-gnu]
 ##################################################
 
-linker = "mingw-w64-x86_64-gcc"
-
-rustflags = [
-	"-C",
-	"linker=mingw-w64-x86_64-gcc",
-	"-C",
-	"link-arg=-Wl,--gc-sections",
-]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-pc-windows-msvc]
 ##################################################
 
-linker = "link.exe"
-
-rustflags = [
-	"-C",
-	"linker=link.exe",
-	"-C",
-	"link-arg=/OPT:REF",
-	"-C",
-	"link-arg=/OPT:ICF",
-	"-C",
-	"target-feature=+crt-static",
-]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]

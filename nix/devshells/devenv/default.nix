@@ -66,11 +66,13 @@ in
             (rustProfile.withComponents cargoComponents)
 
             # Other
+            binutils
             bzip2
             cmake
             figlet
             file
             gnutar
+            lld
             openssl
             xxd
             zlib

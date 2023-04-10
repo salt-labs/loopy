@@ -184,6 +184,7 @@ jobs:
             file \
             gnu-tar \
             libmagic \
+            llvm \
             openssl \
             pkg-config \
             zlib \
@@ -243,10 +244,10 @@ jobs:
         name: Setup the Rust environment for x86_64-pc-windows-gnu
         if: matrix.target == 'x86_64-pc-windows-gnu' && matrix.os == 'windows-latest'
         shell: powershell
-        run: >-
-          choco install
-            mingw
-            winlibs
+        run: |
+          choco install `
+            mingw `
+            winlibs `
             llvm
 
       - id: setup_rust_windows_msvc

@@ -136,7 +136,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
 
-      - id: setup_rust_common
+      - id: setup_rust_linux_common
         name: Setup the Rust environment
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -160,14 +160,33 @@ jobs:
             libpq-dev \
             libssl-dev \
             libtool \
+            lld \
             llvm \
             make \
             pkgconf \
+            rust-all \
             xutils-dev \
             zlib1g-dev \
             zstd
 
-      - id: setup_rust_amd64_gnu
+      - id: setup_rust_x86_64-apple-darwin
+        name: Setup the Rust environment for MacOS
+        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
+        run: |
+          brew update
+          brew install \
+            bzip2 \
+            clang \
+            figlet \
+            file \
+            gnu-tar \
+            libmagic \
+            openssl \
+            pkg-config \
+            zlib \
+            zstd
+
+      - id: setup_rust_x86_64-unknown-linux-gnu
         name: Setup the Rust environment for x86_64-unknown-linux-gnu
         if: matrix.target == 'x86_64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
         run: |
@@ -176,7 +195,7 @@ jobs:
             gcc-multilib \
             g++-multilib
 
-      - id: setup_rust_amd64_musl
+      - id: setup_rust_x86_64-unknown-linux-musl
         name: Setup the Rust environment for x86_64-unknown-linux-musl
         if: matrix.target == 'x86_64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         run: |
@@ -186,7 +205,7 @@ jobs:
             musl-dev \
             musl-tools
 
-      - id: setup_rust_arm64_gnu
+      - id: setup_rust_aarch64_unknown_linux_gnu
         name: Setup the Rust environment for aarch64-unknown-linux-gnu
         if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
         run: |
@@ -195,7 +214,7 @@ jobs:
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu
 
-      - id: setup_rust_arm64_musl
+      - id: setup_rust_aarch64_unknown_linux_musl
         name: Setup the Rust environment for aarch64-unknown-linux-musl
         if: matrix.target == 'aarch64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         run: |
@@ -216,13 +235,6 @@ jobs:
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "platforms;android-29" "build-tools;29.0.2"
           export PATH=$PATH:/opt/android-sdk/ndk/22.0.7026061
-
-      - id: setup_rust_macos
-        name: Setup the Rust environment for MacOS
-        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install libmagic openssl bzip2 figlet file gnu-tar zlib zstd pkg-config
 
       - id: setup_rust_windows_gnu
         name: Setup the Rust environment for x86_64-pc-windows-gnu

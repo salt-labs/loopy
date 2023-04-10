@@ -91,9 +91,22 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
 
+      - id: setup_rust_windows
+        name: Setup the Rust environment (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          cargo install cargo-vcpkg
+          cargo vcpkg --verbose build
+
       - id: setup_zig
         name: Setup the Zig environment
         uses: goto-bus-stop/setup-zig@v2
+
+      - id: setup_zigbuild
+        name: Setup Zig Build
+        run: |
+          cargo install cargo-zigbuild
 
       - id: checkout_repository
         name: Checkout repository
@@ -140,19 +153,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
 
-      - id: setup_rust_zigbuild
-        name: Setup Zig Build
-        run: |
-          cargo install cargo-zigbuild
-
-      - id: setup_windows_rust
-        name: Setup Windows (Rust)
-        if: matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          cargo install cargo-vcpkg
-          cargo vcpkg --verbose build
-
       - id: cargo_check
         name: Run Cargo check
         run: |
@@ -175,8 +175,8 @@ jobs:
           cargo clippy --version
           cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
 
-      - id: cargo_build
-        name: Run Cargo build
+      - id: cargo_zigbuild
+        name: Run Zig Build
         run: |
           cargo --version
           cargo zigbuild --verbose --target ${{ matrix.target }} --release
@@ -185,7 +185,7 @@ jobs:
         name: Run Cargo tests
         run: |
           cargo --version
-          cargo test --verbose --target ${{ matrix.target }}
+          cargo test --verbose
 
       - id: archive_rust
         name: Archive Rust artifacts (cross-platform)

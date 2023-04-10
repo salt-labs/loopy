@@ -180,6 +180,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
+            musl \
             musl-dev \
             musl-tools
 
@@ -198,8 +199,21 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
-            musl-tools \
-            musl-dev
+            musl \
+            musl-dev \
+            musl-tools
+
+      - id: setup_rust_android
+        name: Setup the Rust environment for Android
+        if: matrix.target == 'aarch64-linux-android' && matrix.os == 'ubuntu-latest'
+        run: |
+          # Install Android NDK
+          curl -sSfL https://dl.google.com/android/repository/android-ndk-r21e-linux-x86_64.zip -o android-ndk.zip
+          unzip android-ndk.zip -d /opt/android-ndk
+          export PATH=$PATH:/opt/android-sdk/cmdline-tools/tools/bin
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-29" "build-tools;29.0.2"
+          export PATH=$PATH:/opt/android-sdk/ndk/22.0.7026061
 
       - id: setup_rust_macos
         name: Setup the Rust environment for MacOS

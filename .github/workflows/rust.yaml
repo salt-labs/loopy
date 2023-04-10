@@ -91,22 +91,9 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
 
-      - id: setup_rust_windows
-        name: Setup the Rust environment (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          cargo install cargo-vcpkg
-          cargo vcpkg --verbose build
-
       - id: setup_zig
         name: Setup the Zig environment
         uses: goto-bus-stop/setup-zig@v2
-
-      - id: setup_zigbuild
-        name: Setup Zig Build
-        run: |
-          cargo install cargo-zigbuild
 
       - id: checkout_repository
         name: Checkout repository
@@ -153,6 +140,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
 
+      - id: setup_rust_windows
+        name: Setup the Rust environment (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          cargo install cargo-vcpkg
+          cargo vcpkg --verbose build
+
+      - id: setup_zigbuild
+        name: Setup Zig Build
+        run: |
+          cargo install cargo-zigbuild
       - id: cargo_check
         name: Run Cargo check
         run: |

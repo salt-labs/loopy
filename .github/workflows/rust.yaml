@@ -85,11 +85,11 @@ jobs:
     steps:
       - id: setup_rust
         name: Setup the Rust environment
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          target: ${{ matrix.target }}
+          targets: ${{ matrix.target }}
           toolchain: ${{ matrix.toolchain }}
-          default: true
+          components: rustfmt, clippy
 
       - id: checkout_repository
         name: Checkout repository
@@ -240,31 +240,24 @@ jobs:
           sdkmanager "platform-tools" "platforms;android-29" "build-tools;29.0.2"
           export PATH=$PATH:/opt/android-sdk/ndk/22.0.7026061
 
-      - id: setup_rust_windows_gnu
-        name: Setup the Rust environment for x86_64-pc-windows-gnu
-        if: matrix.target == 'x86_64-pc-windows-gnu' && matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          choco install `
-            mingw `
-            winlibs `
-            llvm
+      - id: setup_windows_common
+        name: Setup Windows (MSYS2)
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          platform-check-severity: fatal
+          update: true
+          release: true
+          msystem: CLANG64
+          install: >-
+            git
+            base-devel
 
-      - id: setup_rust_windows_msvc
-        name: Setup the Rust environment for x86_64-pc-windows-msvc
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+      - id: setup_windows_rust
+        name: Setup Windows (Rust)
+        if: matrix.os == 'windows-latest'
         shell: powershell
-        env:
-          VCPKG_INSTALLED: ${{ github.workspace }}/vcpkg/installed/
-          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
         run: |
-          #git clone https://github.com/microsoft/vcpkg.git
-          #Push-Location -Path "vcpkg"
-          #Start-Process ".\bootstrap-vcpkg.bat"
-          #vcpkg.exe install curl:${env:VCPKG_DEFAULT_TRIPLET} libmagic:${env:VCPKG_DEFAULT_TRIPLET} openssl:${env:VCPKG_DEFAULT_TRIPLET} zlib:${env:VCPKG_DEFAULT_TRIPLET}
-          #vcpkg.exe integrate install
-          #Pop-Location
-          #choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
           cargo install cargo-vcpkg
           cargo vcpkg --verbose build
 

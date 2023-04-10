@@ -44,7 +44,8 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 [target.aarch64-unknown-linux-gnu]
 ##################################################
 
-linker = "aarch64-linux-gnu-gcc"
+linker = "aarch64-unknown-linux-gnu-gcc"
+ar = "aarch64-unknown-linux-gnu-ar"
 
 rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
@@ -52,24 +53,10 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 [target.aarch64-unknown-linux-musl]
 ##################################################
 
-linker = "rust-lld"
+linker = "aarch64-unknown-linux-musl-gcc"
+ar = "aarch64-unknown-linux-musl-ar"
 
-rustflags = [
-	"-C",
-	"link-arg=-march=armv8-a",
-	"-C",
-	"link-arg=-mfpu=neon-fp-armv8",
-	"-C",
-	"link-arg=-mthumb",
-	"-C",
-	"link-arg=-mcpu=cortex-a53",
-	"-C",
-	"link-arg=-fuse-ld=lld",
-	"-C",
-	"link-arg=-lm",
-	"-C",
-	"link-arg=-ldl",
-]
+rustflags = ["-C", "target-feature=-crt-static", "-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-pc-windows-gnu]

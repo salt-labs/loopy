@@ -91,6 +91,10 @@ jobs:
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt, clippy
 
+      - id: setup_zig
+        name: Setup the Zig environment
+        uses: goto-bus-stop/setup-zig@v2
+
       - id: checkout_repository
         name: Checkout repository
         uses: actions/checkout@v2
@@ -173,6 +177,12 @@ jobs:
             zlib1g-dev \
             zstd
 
+      - id: setup_rust_zigbuild
+        name: Setup the Rust Zig Build
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cargo install cargo-zigbuild
+
       - id: setup_rust_x86_64-apple-darwin
         name: Setup the Rust environment for MacOS
         if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
@@ -184,7 +194,6 @@ jobs:
             file \
             gnu-tar \
             libmagic \
-            llvm \
             openssl \
             pkg-config \
             zlib \
@@ -203,11 +212,12 @@ jobs:
         name: Setup the Rust environment for x86_64-unknown-linux-musl
         if: matrix.target == 'x86_64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         run: |
+          sudo dpkg --add-architecture arm64
           sudo apt update
           sudo apt install -y \
-            musl \
-            musl-dev \
-            musl-tools
+            musl:arm64 \
+            musl-dev:arm64 \
+            musl-tools:arm64
 
       - id: setup_rust_aarch64_unknown_linux_gnu
         name: Setup the Rust environment for aarch64-unknown-linux-gnu
@@ -287,7 +297,7 @@ jobs:
         name: Run Cargo build
         run: |
           cargo --version
-          cargo build --verbose --target ${{ matrix.target }} --release
+          cargo zigbuild --verbose --target ${{ matrix.target }} --release
 
       - id: cargo_test
         name: Run Cargo tests

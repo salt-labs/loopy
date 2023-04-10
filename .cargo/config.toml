@@ -22,7 +22,7 @@ lld = true
 
 #linker = "rust-lld"
 
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+#rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-unknown-linux-gnu]
@@ -30,33 +30,33 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 #linker = "rust-lld"
 
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+#rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-unknown-linux-musl]
 ##################################################
 
-linker = "rust-lld"
+#linker = "rust-lld"
 
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+#rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.aarch64-unknown-linux-gnu]
 ##################################################
 
-linker = "aarch64-unknown-linux-gnu-gcc"
-ar = "aarch64-unknown-linux-gnu-ar"
+#linker = "aarch64-unknown-linux-gnu-gcc"
+#ar = "aarch64-unknown-linux-gnu-ar"
 
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+#rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.aarch64-unknown-linux-musl]
 ##################################################
 
-linker = "aarch64-unknown-linux-musl-gcc"
-ar = "aarch64-unknown-linux-musl-ar"
+#linker = "aarch64-unknown-linux-musl-gcc"
+#ar = "aarch64-unknown-linux-musl-ar"
 
-rustflags = ["-C", "target-feature=-crt-static", "-C", "link-arg=-fuse-ld=lld"]
+#rustflags = ["-C", "target-feature=-crt-static", "-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-pc-windows-gnu]
@@ -64,7 +64,7 @@ rustflags = ["-C", "target-feature=-crt-static", "-C", "link-arg=-fuse-ld=lld"]
 
 #linker = "rust-lld.exe"
 
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+#rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-pc-windows-msvc]
@@ -72,4 +72,4 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 #linker = "rust-lld.exe"
 
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+#rustflags = ["-C", "link-arg=-fuse-ld=lld"]

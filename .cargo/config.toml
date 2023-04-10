@@ -18,7 +18,7 @@ rustflags = ["-C", "link-arg=-Wl,-dead_strip"]
 
 linker = "rust-lld"
 
-rustflags = ["-C", "link-arg=-Wl,--gc-sections"]
+rustflags = ["-C", "linker=rust-lld", "-C", "link-arg=-Wl,--gc-sections"]
 
 ##################################################
 [target.x86_64-unknown-linux-musl]
@@ -27,6 +27,8 @@ rustflags = ["-C", "link-arg=-Wl,--gc-sections"]
 linker = "rust-lld"
 
 rustflags = [
+	"-C",
+	"linker=rust-lld",
 	"-C",
 	"link-arg=-Wl,--gc-sections",
 	"-C",
@@ -41,7 +43,12 @@ rustflags = [
 
 linker = "aarch64-linux-gnu-gcc"
 
-rustflags = ["-C", "link-arg=-Wl,--gc-sections"]
+rustflags = [
+	"-C",
+	"linker=aarch64-linux-gnu-gcc",
+	"-C",
+	"link-arg=-Wl,--gc-sections",
+]
 
 ##################################################
 [target.aarch64-unknown-linux-musl]
@@ -50,6 +57,8 @@ rustflags = ["-C", "link-arg=-Wl,--gc-sections"]
 linker = "musl-gcc"
 
 rustflags = [
+	"-C",
+	"linker=musl-gcc",
 	"-C",
 	"link-arg=-Wl,--gc-sections",
 	"-C",
@@ -64,7 +73,12 @@ rustflags = [
 
 linker = "mingw-w64-x86_64-gcc"
 
-rustflags = ["-C", "link-arg=-Wl,--gc-sections"]
+rustflags = [
+	"-C",
+	"linker=mingw-w64-x86_64-gcc",
+	"-C",
+	"link-arg=-Wl,--gc-sections",
+]
 
 ##################################################
 [target.x86_64-pc-windows-msvc]
@@ -73,6 +87,8 @@ rustflags = ["-C", "link-arg=-Wl,--gc-sections"]
 linker = "link.exe"
 
 rustflags = [
+	"-C",
+	"linker=link.exe",
 	"-C",
 	"link-arg=/OPT:REF",
 	"-C",

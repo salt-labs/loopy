@@ -154,12 +154,18 @@ jobs:
             g++ \
             gcc \
             git \
+            libc6-dev \
+            libgcc-7-dev \
             libgcc1 \
+            libm-dev \
             libmagic-dev \
             libmagic1 \
             libpq-dev \
+            libpthread-stubs0-dev \
+            librt-dev \
             libssl-dev \
             libtool \
+            libutil-linux-dev \
             lld \
             llvm \
             make \
@@ -176,7 +182,6 @@ jobs:
           brew update
           brew install \
             bzip2 \
-            clang \
             figlet \
             file \
             gnu-tar \
@@ -241,7 +246,10 @@ jobs:
         if: matrix.target == 'x86_64-pc-windows-gnu' && matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          choco install mingw winlibs llvm
+          choco install \
+            mingw \
+            winlibs \
+            llvm
 
       - id: setup_rust_windows_msvc
         name: Setup the Rust environment for x86_64-pc-windows-msvc

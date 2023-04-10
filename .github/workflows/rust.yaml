@@ -37,6 +37,7 @@ env:
   BRANCH_NAME_DEFAULT: ${{ github.event.repository.default_branch }}
 
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 defaults:
   run:
@@ -212,7 +213,7 @@ jobs:
         if: matrix.target == 'x86_64-pc-windows-gnu' && matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          choco install mingw
+          choco install mingw winlibs llvm
 
       - id: setup_rust_windows_msvc
         name: Setup the Rust environment for x86_64-pc-windows-msvc
@@ -258,7 +259,7 @@ jobs:
         name: Run Cargo build
         run: |
           cargo --version
-          cargo build --verbose --target ${{ matrix.target }}
+          cargo build --verbose --target ${{ matrix.target }} --release
 
       - id: cargo_test
         name: Run Cargo tests

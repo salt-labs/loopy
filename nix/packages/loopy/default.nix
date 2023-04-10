@@ -14,30 +14,31 @@ rustPlatform.buildRustPackage {
 
   preBuild = "export TMPDIR=$(mktemp -d)";
 
+  # buildPlatform
   nativeBuildInputs = with pkgs; [
-    rustc
-    cargo
-    pkgconf
-    cmake
-
     bzip2
+    cargo
+    clang
+    cmake
     figlet
     file
+    gcc
     gnutar
     openssl
+    pkgconf
+    rustc
     xxd
     zlib
     zstd
   ];
 
+  # hostPlatform
   buildInputs = with pkgs; [
     bzip2
     figlet
     file
     gnutar
     openssl
-    xxd
-    zlib
     zstd
   ];
 

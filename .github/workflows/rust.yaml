@@ -132,7 +132,7 @@ jobs:
 
       - id: cache_artifacts_vcpkg
         name: Cache vcpkg
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-latest'
         uses: actions/cache@v2
         with:
           path: vcpkg
@@ -152,6 +152,7 @@ jobs:
         name: Setup Zig Build
         run: |
           cargo install cargo-zigbuild
+
       - id: cargo_check
         name: Run Cargo check
         run: |

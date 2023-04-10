@@ -106,7 +106,7 @@ jobs:
       - id: matrix_conclusion
         name: Store Matrix conclusions
         run: |
-          echo "CONCLUSIONS[${{ matrix.target }}]: ${{ steps.wait_for_rust.outputs.conclusion }}" >> "${GITHUB_OUTPUT}"
+          echo "CONCLUSIONS[${{ matrix.target }}]=${{ steps.wait_for_rust.outputs.conclusion }}" >> "${GITHUB_OUTPUT}"
 
     outputs:
       matrix_conclusions: ${{ toJson(steps.matrix_conclusion.outputs.CONCLUSIONS) }}

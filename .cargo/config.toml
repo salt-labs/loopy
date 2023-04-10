@@ -52,7 +52,7 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 [target.aarch64-unknown-linux-musl]
 ##################################################
 
-linker = "rust-ldd"
+linker = "rust-lld"
 
 rustflags = [
 	"-C",

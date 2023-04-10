@@ -132,11 +132,12 @@ jobs:
       - id: debug
         name: DEBUG
         run: |
-          echo "Conclusions: ${{ toJson(needs.wait_rust.outputs.matrix_conclusions) }}"
+          echo "Conclusions to JSON: ${{ toJson(needs.wait_rust.outputs.matrix_conclusions) }}"
+          echo "Conclusions from JSON: ${{ fromJson(needs.wait_rust.outputs.matrix_conclusions) }}"
 
       - id: pr_comment_thumbs_up
         name: PR Comment (Thumbs Up)
-        if: ${{ needs.wait_linter.outputs.conclusion == 'success' && contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'success') }}
+        if: ${{ needs.wait_linter.outputs.conclusion == 'success' && !contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'failure') }}
         uses: exercism/pr-commenter-action@v1.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -150,7 +151,7 @@ jobs:
 
       - id: pr_comment_thumbs_down
         name: PR Comment (Thumbs Down)
-        if: ${{ needs.wait_linter.outputs.conclusion == 'success' && !contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'success') }}
+        if: ${{ needs.wait_linter.outputs.conclusion == 'success' && contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'failure') }}
         uses: exercism/pr-commenter-action@v1.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

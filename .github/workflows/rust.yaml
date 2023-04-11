@@ -188,15 +188,11 @@ jobs:
         name: Setup the Rust environment for aarch64-unknown-linux-musl
         if: matrix.target == 'aarch64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         run: |
-          sudo dpkg --add-architecture arm64
           sudo apt update
           sudo apt install -y \
             musl \
             musl-dev \
             musl-tools
-            musl:arm64 \
-            musl-dev:arm64 \
-            musl-tools:arm64
 
       - id: setup_rust_windows
         name: Setup the Rust environment (Windows)

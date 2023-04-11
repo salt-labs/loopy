@@ -173,6 +173,7 @@ jobs:
             make \
             pkgconf \
             rust-all \
+            wget \
             xutils-dev \
             zlib1g-dev \
             zstd
@@ -234,6 +235,9 @@ jobs:
             musl \
             musl-dev \
             musl-tools
+          wget https://musl.cc/aarch64-linux-musl-cross.tgz
+          tar -xzf aarch64-linux-musl-cross.tgz -C /opt/
+          echo "PATH=/opt/aarch64-linux-musl-cross/bin:$PATH" >> "${GITHUB_ENV}"
 
       - id: setup_rust_windows
         name: Setup the Rust environment (Windows)

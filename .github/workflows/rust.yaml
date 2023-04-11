@@ -270,6 +270,11 @@ jobs:
         run: |
           cargo install cargo-zigbuild
 
+      - id: setup_xwin
+        name: Setup XWin Build
+        run: |
+          cargo install cargo-xwin
+
       - id: cargo_check
         name: Run Cargo check
         run: |
@@ -295,8 +300,13 @@ jobs:
       - id: cargo_zigbuild
         name: Run Zig Build
         run: |
-          cargo --version
           cargo zigbuild --verbose --target ${{ matrix.target }} --release
+
+      - id: cargo_xwin
+        name: Run XWin Build
+        if: matrix.os != 'windows-latest' && matrix.target == 'x86_64-pc-windows-msvc'
+        run: |
+          cargo xwin build --verbose --target ${{ matrix.target }} --release
 
       - id: cargo_test
         name: Run Cargo tests

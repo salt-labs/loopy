@@ -20,33 +20,33 @@ lld = true
 [target.x86_64-apple-darwin]
 ##################################################
 
-#linker = "rust-lld"
+linker = "rust-lld"
 
-#rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-unknown-linux-gnu]
 ##################################################
 
-#linker = "rust-lld"
+linker = "rust-lld"
 
-#rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-unknown-linux-musl]
 ##################################################
 
-#linker = "rust-lld"
+linker = "rust-lld"
 
-#rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.aarch64-unknown-linux-gnu]
 ##################################################
 
-linker = "aarch64-unknown-linux-gnu-gcc"
+linker = "aarch64-linux-gnu-gcc"
 
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "link-arg=-lgcc"]
 
 ##################################################
 [target.aarch64-unknown-linux-musl]
@@ -60,14 +60,14 @@ rustflags = ["-C", "target-feature=+crt-static", "-C", "link-arg=-lgcc"]
 [target.x86_64-pc-windows-gnu]
 ##################################################
 
-#linker = "rust-lld.exe"
+linker = "rust-lld.exe"
 
-#rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-pc-windows-msvc]
 ##################################################
 
-#linker = "rust-lld.exe"
+linker = "rust-lld.exe"
 
-#rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]

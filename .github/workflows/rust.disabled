@@ -1,202 +1,57 @@
----
-##################################################
-# Name: rust.yml
-# Description: Workflow for Rust projects
-##################################################
-
-name: Rust
-
-on:
-  # A pull request will trigger a build and test.
-  pull_request:
-    branches:
-      - trunk
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - ready_for_review
-      - review_requested
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
-
-  # A successful completion of this worflow will trigger a release.
-  push:
-    branches:
-      - "trunk"
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
-
-env:
-  ORGANISATION: ${{ github.repository_owner }}
-  PROJECT: ${{ github.event.repository.name }}
-
-  BRANCH_NAME_CURRENT: ${{ github.head_ref || github.ref_name }}
-  BRANCH_NAME_DEFAULT: ${{ github.event.repository.default_branch }}
-
-  CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
-
-defaults:
-  run:
-    shell: bash
-
-jobs:
-  #########################
-  # Test the package for linting
-  # and ensure formatted correctly
-  #########################
-
-  cargo_check:
-    name: Cargo Check
-
-    runs-on: ${{ matrix.os }}
-
-    timeout-minutes: 60
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            toolchain: stable
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            toolchain: stable
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-            toolchain: stable
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            toolchain: stable
-          - target: aarch64-unknown-linux-musl
-            os: ubuntu-latest
-            toolchain: stable
-          - target: x86_64-pc-windows-gnu
-            os: windows-latest
-            toolchain: stable
-          - target: x86_64-pc-windows-msvc
-            os: windows-latest
-            toolchain: stable
-
-    steps:
-      - id: setup_rust
+      - id: setup_rust_linux_common
         name: Setup the Rust environment
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-          toolchain: ${{ matrix.toolchain }}
-          components: rustfmt, clippy
-
-      - id: setup_zig
-        name: Setup the Zig environment
-        uses: goto-bus-stop/setup-zig@v2
-
-      - id: checkout_repository
-        name: Checkout repository
-        uses: actions/checkout@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          persist-credentials: true
-
-      - id: cache_artifacts_cargo_registry
-        name: Cache Cargo registry
-        uses: actions/cache@v2
-        with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
-
-      - id: cache_artifacts_cargo_index
-        name: Cache Cargo index
-        uses: actions/cache@v2
-        with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
-
-      - id: cache_artifacts_cargo_target
-        name: Cache Cargo build
-        uses: actions/cache@v2
-        with:
-          path: target/release
-          key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
-
-      - id: cache_artifacts_vcpkg
-        name: Cache vcpkg
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
-        uses: actions/cache@v2
-        with:
-          path: vcpkg
-          key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
-
-      #- id: setup_rust_linux_common
-      #  name: Setup the Rust environment
-      #  if: matrix.os == 'ubuntu-latest'
-      #  run: |
-      #    sudo apt update
-      #    sudo apt install -y \
-      #      autoconf \
-      #      automake \
-      #      binutils \
-      #      build-essential \
-      #      ca-certificates \
-      #      clang \
-      #      cmake \
-      #      curl \
-      #      file \
-      #      g++ \
-      #      gcc \
-      #      git \
-      #      libc6-dev \
-      #      libgcc-10-dev \
-      #      libgcc1 \
-      #      librust-libm-dev \
-      #      libmagic-dev \
-      #      libmagic1 \
-      #      libpq-dev \
-      #      libpthread-stubs0-dev \
-      #      libssl-dev \
-      #      libtool \
-      #      lld \
-      #      llvm \
-      #      make \
-      #      pkgconf \
-      #      rust-all \
-      #      xutils-dev \
-      #      zlib1g-dev \
-      #      zstd
-
-      - id: setup_rust_zigbuild
-        name: Setup Zig Build
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          cargo install cargo-zigbuild
+          sudo apt update
+          sudo apt install -y \
+            autoconf \
+            automake \
+            binutils \
+            build-essential \
+            ca-certificates \
+            clang \
+            cmake \
+            curl \
+            file \
+            g++ \
+            gcc \
+            git \
+            libc6-dev \
+            libgcc-10-dev \
+            libgcc1 \
+            librust-libm-dev \
+            libmagic-dev \
+            libmagic1 \
+            libpq-dev \
+            libpthread-stubs0-dev \
+            libssl-dev \
+            libtool \
+            lld \
+            llvm \
+            make \
+            pkgconf \
+            rust-all \
+            xutils-dev \
+            zlib1g-dev \
+            zstd
 
-      #- id: setup_rust_x86_64-apple-darwin
-      #  name: Setup the Rust environment for MacOS
-      #  if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
-      #  run: |
-      #    brew update
-      #    brew install \
-      #      bzip2 \
-      #      figlet \
-      #      file \
-      #      gnu-tar \
-      #      libmagic \
-      #      openssl \
-      #      pkg-config \
-      #      zlib \
-      #      zstd
+
+
+      - id: setup_rust_x86_64-apple-darwin
+        name: Setup the Rust environment for MacOS
+        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
+        run: |
+          brew update
+          brew install \
+            bzip2 \
+            figlet \
+            file \
+            gnu-tar \
+            libmagic \
+            openssl \
+            pkg-config \
+            zlib \
+            zstd
 
       - id: setup_rust_x86_64-unknown-linux-gnu
         name: Setup the Rust environment for x86_64-unknown-linux-gnu
@@ -269,60 +124,3 @@ jobs:
         run: |
           cargo install cargo-vcpkg
           cargo vcpkg --verbose build
-
-      - id: cargo_check
-        name: Run Cargo check
-        run: |
-          cargo --version
-          cargo check --verbose --target ${{ matrix.target }}
-
-      - id: cargo_fmt
-        name: Run Cargo format
-        run: |
-          rustup component add rustfmt
-          rustup component list --toolchain ${{ matrix.toolchain }}
-          cargo fmt --version
-          cargo fmt --all -- --check
-
-      - id: cargo_clippy
-        name: Run Cargo clippy
-        run: |
-          rustup component add clippy
-          rustup component list --toolchain ${{ matrix.toolchain }}
-          cargo clippy --version
-          cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
-
-      - id: cargo_build
-        name: Run Cargo build
-        run: |
-          cargo --version
-          cargo zigbuild --verbose --target ${{ matrix.target }} --release
-
-      - id: cargo_test
-        name: Run Cargo tests
-        run: |
-          cargo --version
-          cargo test --verbose --target ${{ matrix.target }}
-
-      - id: archive_rust
-        name: Archive Rust artifacts (cross-platform)
-        if: >-
-          github.event_name == 'push' &&
-          github.ref == 'refs/heads/${{ env.BRANCH_NAME_DEFAULT}}'
-        shell: pwsh
-        working-directory: "${{ github.workspace }}"
-        run: >
-          ./.github/scripts/archive.ps1
-          -Target ${{ matrix.target }}
-          -LogLevel debug
-          -DieHard
-          -OutputDir artifacts
-
-      - id: upload_artifacts
-        name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          name: ${{ env.PROJECT }}-${{ matrix.target }}.zip
-          path: artifacts/${{ env.PROJECT }}-${{ matrix.target }}.zip

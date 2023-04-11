@@ -140,6 +140,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
 
+      - id: setup_rust_x86_64-unknown-linux-gnu
+        name: Setup the Rust environment for x86_64-unknown-linux-gnu
+        if: matrix.target == 'x86_64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            gcc-multilib \
+            g++-multilib
+
+      - id: setup_rust_aarch64_unknown_linux_gnu
+        name: Setup the Rust environment for aarch64-unknown-linux-gnu
+        if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu
+
       - id: setup_rust_windows
         name: Setup the Rust environment (Windows)
         if: matrix.os == 'windows-latest'

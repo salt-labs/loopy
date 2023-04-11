@@ -44,19 +44,17 @@ lld = true
 [target.aarch64-unknown-linux-gnu]
 ##################################################
 
-#linker = "aarch64-unknown-linux-gnu-gcc"
-#ar = "aarch64-unknown-linux-gnu-ar"
+linker = "aarch64-unknown-linux-gnu-gcc"
 
-#rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.aarch64-unknown-linux-musl]
 ##################################################
 
-#linker = "aarch64-unknown-linux-musl-gcc"
-#ar = "aarch64-unknown-linux-musl-ar"
+linker = "aarch64-linux-gnu-gcc"
 
-#rustflags = ["-C", "target-feature=-crt-static", "-C", "link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "target-feature=+crt-static", "-C", "link-arg=-lgcc"]
 
 ##################################################
 [target.x86_64-pc-windows-gnu]

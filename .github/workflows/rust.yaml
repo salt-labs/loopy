@@ -179,7 +179,7 @@ jobs:
             zstd
 
       - id: setup_rust_x86_64-apple-darwin
-        name: Setup the Rust environment for MacOS
+        name: Setup the Rust environment for x86_64-apple-darwin
         if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
         run: |
           brew update
@@ -240,7 +240,7 @@ jobs:
           echo "PATH=/opt/aarch64-linux-musl-cross/bin:$PATH" >> "${GITHUB_ENV}"
 
       - id: setup_rust_windows
-        name: Setup the Rust environment (Windows)
+        name: Setup the Rust environment for Windows
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
@@ -248,7 +248,7 @@ jobs:
           cargo vcpkg --verbose build
 
       - id: setup_msys2_windows
-        name: Setup the MSYS2 environment (Windows)
+        name: Install MSYS2 packages on Windows
         if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
@@ -259,16 +259,14 @@ jobs:
           install: >-
             base-devel
             git
-            perl
+            mingw-w64-x86_64-perl
 
-      - id: setup_pacman_windows
-        name: Setup the Pacman environment (Windows)
+      - id: run_msys2_windows
+        name: Run MSYS2 commands on Windows
         if: matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
-          pacman -S --noconfirm \
-          mingw-w64-x86_64-perl \
-          perl-pod-usage
+          cpan Pod::Usage
 
       - id: setup_zigbuild
         name: Setup Zig Build

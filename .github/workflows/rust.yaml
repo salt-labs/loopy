@@ -235,11 +235,27 @@ jobs:
             musl-dev \
             musl-tools
 
+      - id: setup_msys2_windows
+        name: Setup the MSYS2 environment (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          platform-check-severity: fatal
+          update: true
+          release: true
+          msystem: CLANG64
+          install: >-
+            base-devel
+            git
+            perl
+
       - id: setup_rust_windows
         name: Setup the Rust environment (Windows)
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
+          pacman -S mingw-w64-x86_64-perl
+          cpan Pod::Usage
           cargo install cargo-vcpkg
           cargo vcpkg --verbose build
 

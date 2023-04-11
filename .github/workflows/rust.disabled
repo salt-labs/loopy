@@ -108,7 +108,7 @@
         name: Setup Windows (MSYS2)
         if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
-        with:
+        with
           platform-check-severity: fatal
           update: true
           release: true

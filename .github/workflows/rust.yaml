@@ -235,6 +235,14 @@ jobs:
             musl-dev \
             musl-tools
 
+      - id: setup_rust_windows
+        name: Setup the Rust environment (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          cargo install cargo-vcpkg
+          cargo vcpkg --verbose build
+
       - id: setup_msys2_windows
         name: Setup the MSYS2 environment (Windows)
         if: matrix.os == 'windows-latest'
@@ -256,14 +264,6 @@ jobs:
         run: |
           pacman -S mingw-w64-x86_64-perl
           cpan Pod::Usage
-
-      - id: setup_rust_windows
-        name: Setup the Rust environment (Windows)
-        if: matrix.os == 'windows-latest'
-        shell: powershell
-        run: |
-          cargo install cargo-vcpkg
-          cargo vcpkg --verbose build
 
       - id: setup_zigbuild
         name: Setup Zig Build

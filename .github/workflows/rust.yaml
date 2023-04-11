@@ -140,6 +140,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
 
+      - id: setup_rust_x86_64-apple-darwin
+        name: Setup the Rust environment for MacOS
+        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
+        run: |
+          brew update
+          brew install \
+            bzip2 \
+            figlet \
+            file \
+            gnu-tar \
+            libmagic \
+            openssl \
+            pkg-config \
+            zlib \
+            zstd
+
       - id: setup_rust_x86_64-unknown-linux-gnu
         name: Setup the Rust environment for x86_64-unknown-linux-gnu
         if: matrix.target == 'x86_64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
@@ -149,6 +165,16 @@ jobs:
             gcc-multilib \
             g++-multilib
 
+      - id: setup_rust_x86_64-unknown-linux-musl
+        name: Setup the Rust environment for x86_64-unknown-linux-musl
+        if: matrix.target == 'x86_64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            musl \
+            musl-dev \
+            musl-tools
+
       - id: setup_rust_aarch64_unknown_linux_gnu
         name: Setup the Rust environment for aarch64-unknown-linux-gnu
         if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
@@ -157,6 +183,20 @@ jobs:
           sudo apt install -y \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu
+
+      - id: setup_rust_aarch64_unknown_linux_musl
+        name: Setup the Rust environment for aarch64-unknown-linux-musl
+        if: matrix.target == 'aarch64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo apt update
+          sudo apt install -y \
+            musl \
+            musl-dev \
+            musl-tools
+            musl:arm64 \
+            musl-dev:arm64 \
+            musl-tools:arm64
 
       - id: setup_rust_windows
         name: Setup the Rust environment (Windows)

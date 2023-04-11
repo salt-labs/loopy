@@ -34,7 +34,7 @@ lld = true
 
 linker = "aarch64-linux-gnu-gcc"
 
-rustflags = ["-C", "link-arg=-lgcc"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.aarch64-unknown-linux-musl]
@@ -42,7 +42,7 @@ rustflags = ["-C", "link-arg=-lgcc"]
 
 linker = "aarch64-linux-gnu-gcc"
 
-rustflags = ["-C", "target-feature=+crt-static", "-C", "link-arg=-lgcc"]
+rustflags = ["-C", "target-feature=+crt-static", "-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-pc-windows-gnu]

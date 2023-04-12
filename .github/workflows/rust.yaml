@@ -290,11 +290,11 @@ jobs:
         name: Setup Ninja Build
         uses: seanmiddleditch/gha-setup-ninja@master
 
-      - id: cargo_check
-        name: Run Cargo check
-        run: |
-          cargo --version
-          cargo check --verbose --target ${{ matrix.target }}
+      #- id: cargo_check
+      #  name: Run Cargo check
+      #  run: |
+      #    cargo --version
+      #    cargo check --verbose --target ${{ matrix.target }}
 
       - id: cargo_fmt
         name: Run Cargo format

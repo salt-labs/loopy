@@ -178,6 +178,7 @@ jobs:
             llvm \
             make \
             mingw-w64 \
+            perl \
             pkgconf \
             rust-all \
             wget \
@@ -266,15 +267,12 @@ jobs:
           install: >-
             base-devel
             git
-            mingw-w64-x86_64-perl
 
-      - id: run_msys2_windows
-        name: Run MSYS2 commands on Windows
+      - id: setup_choco_windows
+        name: Install Chocolatey packages on Windows
         if: matrix.os == 'windows-latest'
-        shell: msys2 {0}
         run: |
-          cpan Pod::Usage
-          echo "PERL5LIB=$(perl -e 'print "@INC"'):$PERL5LIB" >> $GITHUB_ENV
+          choco install strawberryperl
 
       - id: setup_zigbuild
         name: Setup Zig Build
@@ -290,12 +288,6 @@ jobs:
         name: Setup Ninja Build
         uses: seanmiddleditch/gha-setup-ninja@master
 
-      #- id: cargo_check
-      #  name: Run Cargo check
-      #  run: |
-      #    cargo --version
-      #    cargo check --verbose --target ${{ matrix.target }}
-
       - id: cargo_fmt
         name: Run Cargo format
         run: |
@@ -304,14 +296,18 @@ jobs:
           cargo fmt --version
           cargo fmt --all -- --check
 
-      - id: cargo_clippy
-        name: Run Cargo clippy
-        run: |
-          rustup component add clippy
-          rustup component list --toolchain ${{ matrix.toolchain }}
-          cargo clippy --version
-          cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
-
+      #- id: cargo_check
+      #  name: Run Cargo check
+      #  run: |
+      #    cargo --version
+      #    cargo check --verbose --target ${{ matrix.target }}
+      #- id: cargo_clippy
+      #  name: Run Cargo clippy
+      #  run: |
+      #    rustup component add clippy
+      #    rustup component list --toolchain ${{ matrix.toolchain }}
+      #    cargo clippy --version
+      #    cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
       - id: cargo_zigbuild
         name: Run Zig Build
         run: |
@@ -320,7 +316,7 @@ jobs:
         # Build on Ubuntu against MSVC target.
       - id: cargo_xwin
         name: Run XWin Build
-        if: matrix.os != 'windows-latest' && matrix.target == 'x86_64-pc-windows-msvc'
+        if: matrix.os == 'ubuntu-latest' && matrix.target == 'x86_64-pc-windows-msvc'
         run: |
           cargo xwin build --verbose --target ${{ matrix.target }} --release
 

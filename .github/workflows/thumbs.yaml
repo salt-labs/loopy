@@ -119,6 +119,7 @@ jobs:
             '. + {($TARGET): $CONCLUSION}')
 
           echo "Conclusions JSON: ${CONCLUSIONS_JSON}"
+          echo "${CONCLUSIONS_JSON}" >> "conclusions.json"
           echo "CONCLUSIONS_JSON=${CONCLUSIONS_JSON}" >> "${GITHUB_OUTPUT}"
 
     outputs:
@@ -149,6 +150,8 @@ jobs:
           JSON_CONCLUSIONS="${{ needs.wait_rust.outputs.conclusions_json }}"
           echo "Conclusions:"
           echo ${JSON_CONCLUSIONS} | jq
+          echo "### Conclusions JSON file ###"
+          cat conclusions.json
 
       #- id: pr_comment_thumbs_up
       #  name: PR Comment (Thumbs Up)

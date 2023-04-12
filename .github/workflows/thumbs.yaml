@@ -106,12 +106,17 @@ jobs:
       - id: matrix_conclusion
         name: Store Matrix conclusions
         run: |
-          echo "CONCLUSIONS[${{ matrix.target }}]=${{ steps.wait_for_rust.outputs.conclusion }}" >> "${GITHUB_OUTPUT}"
-          echo "CONCLUSIONS[${{ matrix.target }}]=${{ steps.wait_for_rust.outputs.conclusion }}" >> "${GITHUB_ENV}"
+          CONCLUSIONS="${{ steps.wait_for_rust.outputs.conclusion }}"
+          CONCLUSIONS_JSON=${CONCLUSIONS:-"{}"}
+          CONCLUSIONS_JSON=$(echo ${CONCLUSIONS_JSON} | \
+          jq \
+            --arg target "${{ matrix.target }}" \
+            --arg conclusion "${{ steps.wait_for_rust.outputs.conclusion }}" \
+            '. + {($target): $conclusion}')
+          echo "CONCLUSIONS_JSON=${CONCLUSIONS_JSON}" >> "${GITHUB_OUTPUT}"
 
     outputs:
-      matrix_conclusions: ${{ toJson(steps.matrix_conclusion.outputs.CONCLUSIONS) }}
-      matrix_conclusions2: ${{ toJson(env.CONCLUSIONS) }}
+      conclusions: ${{ steps.matrix_conclusion.outputs.conclusions }}
 
   comment:
     name: Thumbs
@@ -131,39 +136,38 @@ jobs:
           - ubuntu-latest
 
     steps:
-      - id: debug
-        name: DEBUG
+      - id: thumbs
+        name: Determine Thumbs Up/Down
         run: |
-          echo "Conclusions to JSON: ${{ toJson(needs.wait_rust.outputs.matrix_conclusions) }}"
-          echo "Conclusions from JSON: ${{ fromJson(needs.wait_rust.outputs.matrix_conclusions) }}"
-          echo "##########"
-          echo "Conclusions from JSON: ${{ toJson(needs.wait_rust.outputs.matrix_conclusions2) }}"
-          echo "Conclusions from JSON: ${{ fromJson(needs.wait_rust.outputs.matrix_conclusions2) }}"
+          sudo apt-get install -y jq
+          JSON_CONCLUSIONS="${{ needs.wait_rust.outputs.conclusions }}"
+          echo "Conclusions:"
+          echo $JSON_CONCLUSIONS | jq
 
-      - id: pr_comment_thumbs_up
-        name: PR Comment (Thumbs Up)
-        if: ${{ needs.wait_linter.outputs.conclusion == 'success' && !contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'failure') }}
-        uses: exercism/pr-commenter-action@v1.4.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: .github/pr-comments/thumbs_up.yaml
-          template-variables: |
-            {
-              "id": "${{ github.sha }}-thumbs",
-              "onCreate": "create",
-              "onUpdate": "recreate"
-            }
+      #- id: pr_comment_thumbs_up
+      #  name: PR Comment (Thumbs Up)
+      #  if: ${{ needs.wait_linter.outputs.conclusion == 'success' && !contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'failure') }}
+      #  uses: exercism/pr-commenter-action@v1.4.0
+      #  with:
+      #    github-token: ${{ secrets.GITHUB_TOKEN }}
+      #    config-file: .github/pr-comments/thumbs_up.yaml
+      #    template-variables: |
+      #      {
+      #        "id": "${{ github.sha }}-thumbs",
+      #        "onCreate": "create",
+      #        "onUpdate": "recreate"
+      #      }
 
-      - id: pr_comment_thumbs_down
-        name: PR Comment (Thumbs Down)
-        if: ${{ needs.wait_linter.outputs.conclusion == 'success' && contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'failure') }}
-        uses: exercism/pr-commenter-action@v1.4.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: .github/pr-comments/thumbs_down.yaml
-          template-variables: |
-            {
-              "id": "${{ github.sha }}-thumbs",
-              "onCreate": "create",
-              "onUpdate": "recreate"
-            }
+      #- id: pr_comment_thumbs_down
+      #  name: PR Comment (Thumbs Down)
+      #  if: ${{ needs.wait_linter.outputs.conclusion == 'success' && contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'failure') }}
+      #  uses: exercism/pr-commenter-action@v1.4.0
+      #  with:
+      #    github-token: ${{ secrets.GITHUB_TOKEN }}
+      #    config-file: .github/pr-comments/thumbs_down.yaml
+      #    template-variables: |
+      #      {
+      #        "id": "${{ github.sha }}-thumbs",
+      #        "onCreate": "create",
+      #        "onUpdate": "recreate"
+      #      }

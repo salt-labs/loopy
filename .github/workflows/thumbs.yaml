@@ -113,7 +113,7 @@ jobs:
           echo "Conclusions JSON: ${CONCLUSIONS_JSON}"
 
           CONCLUSIONS_JSON=$(echo "${CONCLUSIONS_JSON}" | \
-          jq \
+          jq -c \
             --arg TARGET "${{ matrix.target }}" \
             --arg CONCLUSION "${{ steps.wait_for_rust.outputs.conclusion }}" \
             '. + {($TARGET): $CONCLUSION}')

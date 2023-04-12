@@ -177,6 +177,7 @@ jobs:
             lld \
             llvm \
             make \
+            mingw-w64 \
             pkgconf \
             rust-all \
             wget \

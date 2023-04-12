@@ -271,22 +271,16 @@ jobs:
           cargo fmt --all -- --check
 
       - id: cross_check
-        name: Run Cross check
+        name: Run Cross check on Ubuntu
+        if: matrix.os == 'ubuntu-latest'
         run: |
           cross check --verbose --target ${{ matrix.target }}
 
-      ####################################
-      # TODO: Fix the following commands #
-      ####################################
-
-      - id: cross_clippy
-        name: Run Cross clippy
+      - id: cargo_check_windows
+        name: Run Cargo check on Windows
+        if: matrix.os == 'windows-latest'
         run: |
-          rustup component add clippy
-          rustup component list --toolchain ${{ matrix.toolchain }}
-          cross clippy --version
-          cross clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
-        continue-on-error: true
+          cargo check --verbose --target ${{ matrix.target }}
 
       - id: cargo_clippy
         name: Run Cargo clippy
@@ -295,29 +289,30 @@ jobs:
           rustup component list --toolchain ${{ matrix.toolchain }}
           cargo clippy --version
           cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
-        continue-on-error: true
-
-      - id: cross_build
-        name: Run Cross build
-        run: |
-          cross build --verbose --target ${{ matrix.target }}
-        continue-on-error: true
 
       - id: cargo_zigbuild
-        name: Run Zig Build
-        if: (matrix.target != 'x86_64-pc-windows-msvc')
+        name: Run Zig Build on Ubuntu
+        if: matrix.os == 'ubuntu-latest'
         run: |
           cargo zigbuild --verbose --target ${{ matrix.target }} --release
-        continue-on-error: true
+
+      - id: cargo_build_windows
+        name: Run Cargo build on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          cargo build --verbose --target ${{ matrix.target }} --release
 
       - id: cross_test
-        name: Run Cross tests
+        name: Run Cross test on Ubuntu
+        if: matrix.os == 'ubuntu-latest'
         run: |
           cross test --verbose --target ${{ matrix.target }}
 
-      ####################################
-      # End
-      ####################################
+      - id: cargo_test_windows
+        name: Run Cargo test on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          cargo test --verbose --target ${{ matrix.target }}
 
       - id: archive_rust
         name: Archive Rust artifacts (cross-platform)

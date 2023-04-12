@@ -89,7 +89,7 @@ jobs:
             os: ubuntu-latest
             toolchain: stable
           - target: x86_64-pc-windows-msvc
-            os: ubuntu-latest
+            os: windows-latest
             toolchain: stable
 
     steps:
@@ -167,7 +167,7 @@ jobs:
           echo ${JSON_CONCLUSIONS}
           echo "### Conclusions JSON file ###"
           ls -la conclusions
-          cat conconclusionsclusions/*.json
+          cat conclusions/*.json | jq
 
       #- id: pr_comment_thumbs_up
       #  name: PR Comment (Thumbs Up)

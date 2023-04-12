@@ -78,9 +78,6 @@ jobs:
           - target: x86_64-pc-windows-gnu
             os: ubuntu-latest
             toolchain: stable
-          - target: x86_64-pc-windows-msvc
-            os: ubuntu-latest
-            toolchain: stable
           - target: x86_64-pc-windows-gnu
             os: windows-latest
             toolchain: stable
@@ -255,19 +252,6 @@ jobs:
           cargo install cargo-vcpkg
           cargo vcpkg --verbose build
 
-      - id: setup_msys2_windows
-        name: Install MSYS2 packages on Windows
-        if: matrix.os == 'windows-latest'
-        uses: msys2/setup-msys2@v2
-        with:
-          platform-check-severity: fatal
-          update: true
-          release: true
-          msystem: CLANG64
-          install: >-
-            base-devel
-            git
-
       - id: setup_choco_windows
         name: Install Chocolatey packages on Windows
         if: matrix.os == 'windows-latest'
@@ -279,14 +263,10 @@ jobs:
         run: |
           cargo install cargo-zigbuild
 
-      - id: setup_xwin
-        name: Setup XWin Build
+      - id: setup_cross
+        name: Setup Cross Build
         run: |
-          cargo install cargo-xwin
-
-      - id: setup_ninja
-        name: Setup Ninja Build
-        uses: seanmiddleditch/gha-setup-ninja@master
+          cargo install cross
 
       - id: cargo_fmt
         name: Run Cargo format
@@ -296,36 +276,34 @@ jobs:
           cargo fmt --version
           cargo fmt --all -- --check
 
-      #- id: cargo_check
-      #  name: Run Cargo check
-      #  run: |
-      #    cargo --version
-      #    cargo check --verbose --target ${{ matrix.target }}
-      #- id: cargo_clippy
-      #  name: Run Cargo clippy
-      #  run: |
-      #    rustup component add clippy
-      #    rustup component list --toolchain ${{ matrix.toolchain }}
-      #    cargo clippy --version
-      #    cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
+      - id: cross_check
+        name: Run Cross check
+        run: |
+          cross check --verbose --target ${{ matrix.target }}
+
+      - id: cross_build
+        name: Run Cross build
+        run: |
+          cross build --verbose --target ${{ matrix.target }}
+
+      - id: cargo_clippy
+        name: Run Cargo clippy
+        run: |
+          rustup component add clippy
+          rustup component list --toolchain ${{ matrix.toolchain }}
+          cargo clippy --version
+          cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
+
       - id: cargo_zigbuild
         name: Run Zig Build
         if: (matrix.target != 'x86_64-pc-windows-msvc')
         run: |
           cargo zigbuild --verbose --target ${{ matrix.target }} --release
 
-        # Build on Ubuntu against MSVC target.
-      - id: cargo_xwin
-        name: Run XWin Build
-        if: (matrix.os == 'ubuntu-latest' && matrix.target == 'x86_64-pc-windows-msvc')
+      - id: cross_test
+        name: Run Cross tests
         run: |
-          cargo xwin build --verbose --target ${{ matrix.target }} --release
-
-      - id: cargo_test
-        name: Run Cargo tests
-        run: |
-          cargo --version
-          cargo test --verbose
+          cross test --verbose --target ${{ matrix.target }}
 
       - id: archive_rust
         name: Archive Rust artifacts (cross-platform)

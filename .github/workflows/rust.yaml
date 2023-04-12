@@ -310,13 +310,14 @@ jobs:
       #    cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
       - id: cargo_zigbuild
         name: Run Zig Build
+        if: (matrix.target != 'x86_64-pc-windows-msvc')
         run: |
           cargo zigbuild --verbose --target ${{ matrix.target }} --release
 
         # Build on Ubuntu against MSVC target.
       - id: cargo_xwin
         name: Run XWin Build
-        if: matrix.os == 'ubuntu-latest' && matrix.target == 'x86_64-pc-windows-msvc'
+        if: (matrix.os == 'ubuntu-latest' && matrix.target == 'x86_64-pc-windows-msvc')
         run: |
           cargo xwin build --verbose --target ${{ matrix.target }} --release
 

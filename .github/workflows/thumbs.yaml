@@ -106,17 +106,23 @@ jobs:
       - id: matrix_conclusion
         name: Store Matrix conclusions
         run: |
-          CONCLUSIONS="${{ steps.wait_for_rust.outputs.conclusion }}"
-          CONCLUSIONS_JSON=${CONCLUSIONS:-"{}"}
-          CONCLUSIONS_JSON=$(echo ${CONCLUSIONS_JSON} | \
+          CONCLUSION="${{ steps.wait_for_rust.outputs.conclusion }}"
+          echo "Conclusion: ${CONCLUSION}"
+
+          CONCLUSIONS_JSON=${CONCLUSIONS_JSON:-"{}"}
+          echo "Conclusions JSON: ${CONCLUSIONS_JSON}"
+
+          CONCLUSIONS_JSON=$(echo "${CONCLUSIONS_JSON}" | \
           jq \
-            --arg target "${{ matrix.target }}" \
-            --arg conclusion "${{ steps.wait_for_rust.outputs.conclusion }}" \
-            '. + {($target): $conclusion}')
+            --arg TARGET "${{ matrix.target }}" \
+            --arg CONCLUSION "${{ steps.wait_for_rust.outputs.conclusion }}" \
+            '. + {($TARGET): $CONCLUSION}')
+
+          echo "Conclusions JSON: ${CONCLUSIONS_JSON}"
           echo "CONCLUSIONS_JSON=${CONCLUSIONS_JSON}" >> "${GITHUB_OUTPUT}"
 
     outputs:
-      conclusions: ${{ steps.matrix_conclusion.outputs.conclusions }}
+      conclusions_json: ${{ steps.matrix_conclusion.outputs.CONCLUSIONS_JSON }}
 
   comment:
     name: Thumbs
@@ -140,9 +146,9 @@ jobs:
         name: Determine Thumbs Up/Down
         run: |
           sudo apt-get install -y jq
-          JSON_CONCLUSIONS="${{ needs.wait_rust.outputs.conclusions }}"
+          JSON_CONCLUSIONS="${{ needs.wait_rust.outputs.conclusions_json }}"
           echo "Conclusions:"
-          echo $JSON_CONCLUSIONS | jq
+          echo ${JSON_CONCLUSIONS} | jq
 
       #- id: pr_comment_thumbs_up
       #  name: PR Comment (Thumbs Up)

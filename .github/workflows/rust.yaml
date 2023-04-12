@@ -78,6 +78,9 @@ jobs:
           - target: x86_64-pc-windows-gnu
             os: ubuntu-latest
             toolchain: stable
+          - target: x86_64-pc-windows-msvc
+            os: ubuntu-latest
+            toolchain: stable
           - target: x86_64-pc-windows-gnu
             os: windows-latest
             toolchain: stable
@@ -281,18 +284,18 @@ jobs:
         run: |
           cross check --verbose --target ${{ matrix.target }}
 
+      - id: cross_clippy
+        name: Run Cross clippy
+        run: |
+          rustup component add clippy
+          rustup component list --toolchain ${{ matrix.toolchain }}
+          cross clippy --version
+          cross clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
+
       - id: cross_build
         name: Run Cross build
         run: |
           cross build --verbose --target ${{ matrix.target }}
-
-      - id: cargo_clippy
-        name: Run Cargo clippy
-        run: |
-          rustup component add clippy
-          rustup component list --toolchain ${{ matrix.toolchain }}
-          cargo clippy --version
-          cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
 
       - id: cargo_zigbuild
         name: Run Zig Build

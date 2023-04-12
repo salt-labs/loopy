@@ -285,6 +285,10 @@ jobs:
         run: |
           cargo install cargo-xwin
 
+      - id: setup_ninja
+        name: Setup Ninja Build
+        uses: seanmiddleditch/gha-setup-ninja@master
+
       - id: cargo_check
         name: Run Cargo check
         run: |

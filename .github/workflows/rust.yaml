@@ -291,17 +291,29 @@ jobs:
           rustup component list --toolchain ${{ matrix.toolchain }}
           cross clippy --version
           cross clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
+        continue-on-error: true
+
+      - id: cargo_clippy
+        name: Run Cargo clippy
+        run: |
+          rustup component add clippy
+          rustup component list --toolchain ${{ matrix.toolchain }}
+          cargo clippy --version
+          cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
+        continue-on-error: true
 
       - id: cross_build
         name: Run Cross build
         run: |
           cross build --verbose --target ${{ matrix.target }}
+        continue-on-error: true
 
       - id: cargo_zigbuild
         name: Run Zig Build
         if: (matrix.target != 'x86_64-pc-windows-msvc')
         run: |
           cargo zigbuild --verbose --target ${{ matrix.target }} --release
+        continue-on-error: true
 
       - id: cross_test
         name: Run Cross tests

@@ -32,24 +32,16 @@ lld = true
 [target.aarch64-unknown-linux-gnu]
 ##################################################
 
-linker = "aarch64-linux-gnu-gcc"
-
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
-
 ##################################################
 [target.aarch64-unknown-linux-musl]
 ##################################################
-
-linker = "aarch64-linux-gnu-gcc"
-
-rustflags = ["-C", "target-feature=+crt-static", "-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-pc-windows-gnu]
 ##################################################
 
-linker = "x86_64-w64-mingw32-gcc"
-ar = "x86_64-w64-mingw32-gcc-ar"
+#linker = "x86_64-w64-mingw32-gcc"
+#ar = "x86_64-w64-mingw32-gcc-ar"
 
 ##################################################
 [target.x86_64-pc-windows-msvc]

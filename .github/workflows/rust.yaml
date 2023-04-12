@@ -79,12 +79,6 @@ jobs:
             os: ubuntu-latest
             toolchain: stable
           - target: x86_64-pc-windows-msvc
-            os: ubuntu-latest
-            toolchain: stable
-          - target: x86_64-pc-windows-gnu
-            os: windows-latest
-            toolchain: stable
-          - target: x86_64-pc-windows-msvc
             os: windows-latest
             toolchain: stable
 
@@ -100,6 +94,8 @@ jobs:
       - id: setup_zig
         name: Setup the Zig environment
         uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: master
 
       - id: checkout_repository
         name: Checkout repository
@@ -146,8 +142,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
 
-      - id: setup_rust_linux_common
-        name: Setup the Rust environment
+      - id: setup_rust_ubuntu
+        name: Setup the Rust environment for Ubuntu
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
@@ -186,9 +182,9 @@ jobs:
             zlib1g-dev \
             zstd
 
-      - id: setup_rust_x86_64-apple-darwin
-        name: Setup the Rust environment for x86_64-apple-darwin
-        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
+      - id: setup_rust_macos
+        name: Setup the Rust environment for MacOS
+        if: matrix.os == 'macos-latest'
         run: |
           brew update
           brew install \
@@ -254,11 +250,6 @@ jobs:
         run: |
           cargo install cargo-vcpkg
           cargo vcpkg --verbose build
-
-      - id: setup_choco_windows
-        name: Install Chocolatey packages on Windows
-        if: matrix.os == 'windows-latest'
-        run: |
           choco install strawberryperl
 
       - id: setup_zigbuild
@@ -283,6 +274,10 @@ jobs:
         name: Run Cross check
         run: |
           cross check --verbose --target ${{ matrix.target }}
+
+      ####################################
+      # TODO: Fix the following commands #
+      ####################################
 
       - id: cross_clippy
         name: Run Cross clippy
@@ -319,6 +314,10 @@ jobs:
         name: Run Cross tests
         run: |
           cross test --verbose --target ${{ matrix.target }}
+
+      ####################################
+      # End
+      ####################################
 
       - id: archive_rust
         name: Archive Rust artifacts (cross-platform)

@@ -78,6 +78,9 @@ jobs:
           - target: x86_64-pc-windows-gnu
             os: ubuntu-latest
             toolchain: stable
+          - target: x86_64-pc-windows-msvc
+            os: ubuntu-latest
+            toolchain: stable
           - target: x86_64-pc-windows-gnu
             os: windows-latest
             toolchain: stable
@@ -271,7 +274,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cpan Pod::Usage
-          echo "PERL5LIB=$(perl -e 'print "@INC"'):$PERL5LIB" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "PERL5LIB=$(perl -e 'print "@INC"'):$PERL5LIB" >> $GITHUB_ENV
 
       - id: setup_zigbuild
         name: Setup Zig Build
@@ -314,11 +317,10 @@ jobs:
         run: |
           cargo zigbuild --verbose --target ${{ matrix.target }} --release
 
+        # Build on Ubuntu against MSVC target.
       - id: cargo_xwin
         name: Run XWin Build
-        if: >-
-          matrix.os != 'windows-latest' &&
-          ( matrix.target == 'x86_64-pc-windows-msvc' || matrix.target == 'x86_64-pc-windows-gnu' )
+        if: matrix.os != 'windows-latest' && matrix.target == 'x86_64-pc-windows-msvc'
         run: |
           cargo xwin build --verbose --target ${{ matrix.target }} --release
 

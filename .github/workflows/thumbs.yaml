@@ -150,7 +150,7 @@ jobs:
           sudo apt-get install -y jq
           JSON_CONCLUSIONS="${{ needs.wait_rust.outputs.conclusions_json }}"
           echo "Conclusions:"
-          echo ${JSON_CONCLUSIONS} | jq
+          echo ${JSON_CONCLUSIONS}
           echo "### Conclusions JSON file ###"
           cat conclusions.json
 

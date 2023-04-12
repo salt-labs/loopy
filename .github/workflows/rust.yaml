@@ -78,9 +78,6 @@ jobs:
           - target: x86_64-pc-windows-gnu
             os: ubuntu-latest
             toolchain: stable
-          - target: x86_64-pc-windows-msvc
-            os: ubuntu-latest
-            toolchain: stable
           - target: x86_64-pc-windows-gnu
             os: windows-latest
             toolchain: stable

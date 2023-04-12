@@ -157,16 +157,17 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: conclusions
+          path: conclusions
 
       - id: thumbs
         name: Determine Thumbs Up/Down
         run: |
-          sudo apt-get install -y jq
+          sudo apt-get install -y jq tree
           JSON_CONCLUSIONS="${{ needs.wait_rust.outputs.conclusions_json }}"
           echo "Conclusions:"
           echo ${JSON_CONCLUSIONS}
           echo "### Conclusions JSON file ###"
-          ls -la conclusions
+          tree conclusions
           cat conclusions/*.json | jq
 
       #- id: pr_comment_thumbs_up

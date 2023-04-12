@@ -120,8 +120,16 @@ jobs:
             '. + {($TARGET): $CONCLUSION}')
 
           echo "Conclusions JSON: ${CONCLUSIONS_JSON}"
-          echo "${CONCLUSIONS_JSON}" >> "conclusions.json"
+          mkdir artifacts
+          echo "${CONCLUSIONS_JSON}" >> "artifacts/${{ matrix.target }}-conclusions.json"
           echo "CONCLUSIONS_JSON=${CONCLUSIONS_JSON}" >> "${GITHUB_OUTPUT}"
+
+      - id: upload_artifacts
+        name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: conclusions
+          path: artifacts
 
     outputs:
       conclusions_json: ${{ steps.matrix_conclusion.outputs.CONCLUSIONS_JSON }}
@@ -144,6 +152,12 @@ jobs:
           - ubuntu-latest
 
     steps:
+      - id: download_artifacts
+        name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: conclusions
+
       - id: thumbs
         name: Determine Thumbs Up/Down
         run: |
@@ -152,7 +166,8 @@ jobs:
           echo "Conclusions:"
           echo ${JSON_CONCLUSIONS}
           echo "### Conclusions JSON file ###"
-          cat conclusions.json
+          ls -la conclusions
+          cat conconclusionsclusions/*.json
 
       #- id: pr_comment_thumbs_up
       #  name: PR Comment (Thumbs Up)

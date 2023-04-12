@@ -76,6 +76,12 @@ jobs:
             os: ubuntu-latest
             toolchain: stable
           - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-pc-windows-msvc
+            os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-pc-windows-gnu
             os: windows-latest
             toolchain: stable
           - target: x86_64-pc-windows-msvc
@@ -308,7 +314,9 @@ jobs:
 
       - id: cargo_xwin
         name: Run XWin Build
-        if: matrix.os != 'windows-latest' && matrix.target == 'x86_64-pc-windows-msvc'
+        if: >-
+          matrix.os != 'windows-latest' &&
+          ( matrix.target == 'x86_64-pc-windows-msvc' || matrix.target == 'x86_64-pc-windows-gnu' )
         run: |
           cargo xwin build --verbose --target ${{ matrix.target }} --release
 

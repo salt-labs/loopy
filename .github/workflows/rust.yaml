@@ -251,6 +251,7 @@ jobs:
           choco install -y activeperl
           cargo install cargo-vcpkg
           cargo vcpkg --verbose build
+          $env:Path = "C:\Perl64\bin;" + $env:Path
 
       - id: setup_zigbuild
         name: Setup Zig Build

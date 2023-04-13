@@ -863,6 +863,12 @@ Process {
     Write-Log -LogLevel "Debug" -LogMessage "Bin Nix: $BinNix"
     Write-Log -LogLevel "Debug" -LogMessage "Bin Win: $BinWin"
 
+    # If the log level is debug, show the tree of the release directory.
+    If ( $LogLevel -eq "Debug" ) {
+        Write-Log -LogLevel "Debug" -LogMessage "Release Directory Tree"
+        Get-ChildItem -Path "$Release" -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     If ( $BinNixExists ) {
         Add-Archive -Archive $Archive -File $BinNix
     } Else {

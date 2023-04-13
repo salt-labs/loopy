@@ -292,9 +292,15 @@ jobs:
           cargo clippy --version
           cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
 
-      - id: cargo_zigbuild
+      - id: cargo_zigbuild_ubuntu
         name: Run Zig Build on Ubuntu
         if: matrix.os == 'ubuntu-latest' && matrix.target != 'x86_64-pc-windows-gnu'
+        run: |
+          cargo zigbuild --verbose --target ${{ matrix.target }} --release
+
+      - id: cargo_zigbuild_macos
+        name: Run Zig Build on MacOS
+        if: matrix.os == 'macos-latest'
         run: |
           cargo zigbuild --verbose --target ${{ matrix.target }} --release
 

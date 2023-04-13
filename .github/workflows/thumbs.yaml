@@ -161,18 +161,19 @@ jobs:
         run: |
           sudo apt-get install -y jq tree
           tree conclusions
-
           THUMBS="UP"
           for FILE in conclusions/*.json;
           do
+            TARGET=$(jq -r 'to_entries[] | select(.value) | .key' "$FILE")
             CONCLUSION=$(jq -r 'to_entries[] | select(.value != "success") | .value' "$FILE")
+            echo "Target: $TARGET"
+            echo "Conclusion: $CONCLUSION"
             if [[ -n $CONCLUSION ]];
             then
               THUMBS="DOWN"
               break
             fi
           done
-
           echo "THUMBS=$THUMBS" >> "${GITHUB_OUTPUT}"
           echo "Thumbs: $THUMBS"
 

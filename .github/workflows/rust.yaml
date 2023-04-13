@@ -150,7 +150,7 @@ jobs:
         name: Setup the Rust environment for Ubuntu
         if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt update
+          sudo apt update || true
           sudo apt install -y \
             autoconf \
             automake \
@@ -209,7 +209,7 @@ jobs:
         name: Setup the Rust environment for x86_64-unknown-linux-gnu
         if: matrix.target == 'x86_64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt update
+          sudo apt update || true
           sudo apt install -y \
             gcc-multilib \
             g++-multilib
@@ -218,7 +218,7 @@ jobs:
         name: Setup the Rust environment for x86_64-unknown-linux-musl
         if: matrix.target == 'x86_64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt update
+          sudo apt update || true
           sudo apt install -y \
             musl \
             musl-dev \
@@ -228,24 +228,28 @@ jobs:
         name: Setup the Rust environment for aarch64-unknown-linux-gnu
         if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt update
+          sudo dpkg --add-architecture arm64
+          sudo apt update || true
           sudo apt install -y \
             binutils-aarch64-linux-gnu \
             gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu
+            g++-aarch64-linux-gnu \
+            libmagic-dev:arm64
 
       - id: setup_rust_aarch64_unknown_linux_musl
         name: Setup the Rust environment for aarch64-unknown-linux-musl
         if: matrix.target == 'aarch64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt update
+          sudo dpkg --add-architecture arm64
+          sudo apt update || true
           sudo apt install -y \
             binutils-aarch64-linux-gnu \
             gcc-aarch64-linux-gnu \
             g++-aarch64-linux-gnu \
             musl \
             musl-dev \
-            musl-tools
+            musl-tools \
+            libmagic-dev:arm64
           wget https://musl.cc/aarch64-linux-musl-cross.tgz
           tar -xzf aarch64-linux-musl-cross.tgz -C /opt/
           echo "PATH=/opt/aarch64-linux-musl-cross/bin:$PATH" >> "${GITHUB_ENV}"
@@ -254,7 +258,7 @@ jobs:
         name: Setup the Rust environment for x86_64-pc-windows-gnu
         if: matrix.target == 'x86_64-pc-windows-gnu' && matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt update
+          sudo apt update || true
           sudo apt install -y \
             binutils-mingw-w64 \
             g++-mingw-w64 \

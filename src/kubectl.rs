@@ -11,14 +11,17 @@ use anyhow::{anyhow, Context, Result};
 use k8s_openapi::api::core::v1::{Namespace, NamespaceSpec};
 use kube::api::ObjectMeta;
 use kube::api::{DeleteParams, ListParams, PatchParams};
-use kube::{api::Api, Client, Config};
+use kube::{api::Api, Client};
 use log::{debug, error, info, warn};
 use serde_json::json;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::future::Future;
 use std::path::PathBuf;
-use tempfile::tempdir;
+
+/// A function that applies or deletes a Kubernetes manifest.
+pub type ApplyFn<'a> =
+    fn(&'a Manifests) -> Box<dyn Future<Output = Result<(), anyhow::Error>> + Send + Unpin + 'a>;
 
 /// Kubectl apply or delete a URL.
 ///
@@ -708,9 +711,7 @@ pub async fn kubectl_namespace_delete(name: &str) -> Result<()> {
 pub async fn kubectl_process_manifests<'a>(
     manifests: &'a [Manifests],
     action: &str,
-    apply_fn: fn(
-        &'a Manifests,
-    ) -> Box<dyn Future<Output = Result<(), anyhow::Error>> + Send + Unpin + 'a>,
+    apply_fn: ApplyFn<'a>,
 ) -> Result<()> {
     if manifests.is_empty() {
         println!(

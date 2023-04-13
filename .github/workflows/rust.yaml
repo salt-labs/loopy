@@ -161,6 +161,7 @@ jobs:
             gcc \
             git \
             libc6-dev \
+            libcurl4-openssl-dev \
             libgcc-10-dev \
             libgcc1 \
             librust-libm-dev \

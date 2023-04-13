@@ -7,6 +7,7 @@ use crate::config::*;
 use crate::helm::{helm_process_charts, helm_process_repos, helm_repo};
 use crate::kubectl::{
     kubectl_apply_manifest, kubectl_delete_manifest, kubectl_namespace, kubectl_process_manifests,
+    ApplyFn,
 };
 use crate::PACKAGE_NAME;
 use anyhow::{anyhow, Context, Result};
@@ -847,10 +848,7 @@ pub async fn process_install_uninstall<'a>(action: &str, config: &'a Config) -> 
     }
 
     // Define apply_fn for processing manifests
-    let apply_fn: fn(
-        &'a Manifests,
-    )
-        -> Box<dyn Future<Output = Result<(), anyhow::Error>> + Send + Unpin + 'a> = match action {
+    let apply_fn: ApplyFn<'a> = match action {
         "install" => |manifest| -> Box<
             dyn Future<Output = Result<(), anyhow::Error>> + Send + Unpin + 'a,
         > { Box::new(Box::pin(kubectl_apply_manifest(manifest))) },

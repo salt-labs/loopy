@@ -59,8 +59,8 @@ jobs:
     outputs:
       conclusion: ${{ steps.wait_for_linter.outputs.conclusion }}
 
-  wait_rust:
-    name: Wait for Rust
+  wait_build:
+    name: Wait for Build
 
     runs-on: ${{ matrix.os }}
 
@@ -93,13 +93,13 @@ jobs:
             toolchain: stable
 
     steps:
-      - id: wait_for_rust
-        name: Wait for Rust (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
+      - id: wait_for_build
+        name: Wait for Build (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
         uses: fountainhead/action-wait-for-check@v1.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          checkName: Cargo Check (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
+          checkName: Build (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
           timeoutSeconds: 1800
           intervalSeconds: 30
 
@@ -107,7 +107,7 @@ jobs:
         name: Store Matrix conclusions
         shell: bash
         run: |
-          CONCLUSION="${{ steps.wait_for_rust.outputs.conclusion }}"
+          CONCLUSION="${{ steps.wait_for_build.outputs.conclusion }}"
           echo "Conclusion: ${CONCLUSION}"
 
           CONCLUSIONS_JSON=${CONCLUSIONS_JSON:-"{}"}
@@ -116,13 +116,13 @@ jobs:
           CONCLUSIONS_JSON=$(echo "${CONCLUSIONS_JSON}" | \
           jq -c \
             --arg TARGET "${{ matrix.target }}" \
-            --arg CONCLUSION "${{ steps.wait_for_rust.outputs.conclusion }}" \
+            --arg CONCLUSION "${{ steps.wait_for_build.outputs.conclusion }}" \
             '. + {($TARGET): $CONCLUSION}')
 
           echo "Conclusions JSON: ${CONCLUSIONS_JSON}"
+          echo "CONCLUSIONS_JSON=${CONCLUSIONS_JSON}" >> "${GITHUB_OUTPUT}"
           mkdir artifacts
           echo "${CONCLUSIONS_JSON}" >> "artifacts/${{ matrix.target }}-conclusions.json"
-          echo "CONCLUSIONS_JSON=${CONCLUSIONS_JSON}" >> "${GITHUB_OUTPUT}"
 
       - id: upload_artifacts
         name: Upload Artifacts
@@ -130,9 +130,6 @@ jobs:
         with:
           name: conclusions
           path: artifacts
-
-    outputs:
-      conclusions_json: ${{ steps.matrix_conclusion.outputs.CONCLUSIONS_JSON }}
 
   comment:
     name: Thumbs
@@ -143,7 +140,7 @@ jobs:
 
     needs:
       - wait_linter
-      - wait_rust
+      - wait_build
 
     strategy:
       fail-fast: true
@@ -163,37 +160,46 @@ jobs:
         name: Determine Thumbs Up/Down
         run: |
           sudo apt-get install -y jq tree
-          JSON_CONCLUSIONS="${{ needs.wait_rust.outputs.conclusions_json }}"
-          echo "Conclusions:"
-          echo ${JSON_CONCLUSIONS}
-          echo "### Conclusions JSON file ###"
           tree conclusions
-          cat conclusions/*.json | jq
 
-      #- id: pr_comment_thumbs_up
-      #  name: PR Comment (Thumbs Up)
-      #  if: ${{ needs.wait_linter.outputs.conclusion == 'success' && !contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'failure') }}
-      #  uses: exercism/pr-commenter-action@v1.4.0
-      #  with:
-      #    github-token: ${{ secrets.GITHUB_TOKEN }}
-      #    config-file: .github/pr-comments/thumbs_up.yaml
-      #    template-variables: |
-      #      {
-      #        "id": "${{ github.sha }}-thumbs",
-      #        "onCreate": "create",
-      #        "onUpdate": "recreate"
-      #      }
+          THUMBS="UP"
+          for FILE in conclusions/*.json;
+          do
+            CONCLUSION=$(jq -r 'to_entries[] | select(.value != "success") | .value' "$FILE")
+            if [[ -n $CONCLUSION ]];
+            then
+              THUMBS="DOWN"
+              break
+            fi
+          done
 
-      #- id: pr_comment_thumbs_down
-      #  name: PR Comment (Thumbs Down)
-      #  if: ${{ needs.wait_linter.outputs.conclusion == 'success' && contains(fromJson(needs.wait_rust.outputs.matrix_conclusions), 'failure') }}
-      #  uses: exercism/pr-commenter-action@v1.4.0
-      #  with:
-      #    github-token: ${{ secrets.GITHUB_TOKEN }}
-      #    config-file: .github/pr-comments/thumbs_down.yaml
-      #    template-variables: |
-      #      {
-      #        "id": "${{ github.sha }}-thumbs",
-      #        "onCreate": "create",
-      #        "onUpdate": "recreate"
-      #      }
+          echo "THUMBS=$THUMBS" >> "${GITHUB_OUTPUT}"
+          echo "Thumbs: $THUMBS"
+
+      - id: pr_comment_thumbs_up
+        name: PR Comment (Thumbs Up)
+        if: ${{ steps.thumbs.outputs.THUMBS == 'UP' }}
+        uses: exercism/pr-commenter-action@v1.4.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/pr-comments/thumbs_up.yaml
+          template-variables: |
+            {
+              "id": "${{ github.sha }}-thumbs",
+              "onCreate": "create",
+              "onUpdate": "recreate"
+            }
+
+      - id: pr_comment_thumbs_down
+        name: PR Comment (Thumbs Down)
+        if: ${{ steps.thumbs.outputs.THUMBS == 'DOWN' }}
+        uses: exercism/pr-commenter-action@v1.4.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/pr-comments/thumbs_down.yaml
+          template-variables: |
+            {
+              "id": "${{ github.sha }}-thumbs",
+              "onCreate": "create",
+              "onUpdate": "recreate"
+            }

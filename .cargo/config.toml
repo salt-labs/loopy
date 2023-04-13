@@ -13,8 +13,8 @@
 [rust]
 ##################################################
 
-channel = "stable"
-lld = true
+#channel = "stable"
+#lld = true
 
 ##################################################
 [target.x86_64-apple-darwin]

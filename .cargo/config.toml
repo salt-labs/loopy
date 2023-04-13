@@ -8,6 +8,8 @@
 [build]
 ##################################################
 
+linker = "rust-lld"
+
 ##################################################
 [rust]
 ##################################################
@@ -31,13 +33,15 @@ rustflags = ["-C", "linker=clang", "-C", "link-arg=-fuse-ld=lld"]
 [target.x86_64-unknown-linux-musl]
 ##################################################
 
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld", "-C", "relocation-model=static"]
 
 ##################################################
 [target.aarch64-unknown-linux-gnu]
 ##################################################
 
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+#linker = "aarch64-linux-gnu-gcc"
+
+rustflags = []
 
 ##################################################
 [target.aarch64-unknown-linux-musl]
@@ -49,7 +53,7 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 [target.x86_64-pc-windows-gnu]
 ##################################################
 
-linker = "x86_64-w64-mingw32-gcc"
+#linker = "x86_64-w64-mingw32-gcc"
 
 #rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 rustflags = []

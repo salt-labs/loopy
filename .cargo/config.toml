@@ -8,8 +8,6 @@
 [build]
 ##################################################
 
-linker = "rust-lld"
-
 ##################################################
 [rust]
 ##################################################
@@ -21,19 +19,23 @@ lld = true
 [target.x86_64-apple-darwin]
 ##################################################
 
+linker = "clang"
+
 rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-unknown-linux-gnu]
 ##################################################
 
-#linker = "clang"
+linker = "clang"
 
-rustflags = ["link-arg=-fuse-ld=lld"]
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 
 ##################################################
 [target.x86_64-unknown-linux-musl]
 ##################################################
+
+linker = "clang"
 
 rustflags = ["-C", "link-arg=-fuse-ld=lld", "-C", "relocation-model=static"]
 
@@ -41,27 +43,34 @@ rustflags = ["-C", "link-arg=-fuse-ld=lld", "-C", "relocation-model=static"]
 [target.aarch64-unknown-linux-gnu]
 ##################################################
 
-#linker = "aarch64-linux-gnu-gcc"
-
-rustflags = ["link-arg=-fuse-ld=lld"]
-
-##################################################
-[target.aarch64-unknown-linux-musl]
-##################################################
-
-rustflags = ["-C", "link-arg=-fuse-ld=lld", "-C", "relocation-model=static"]
-
-##################################################
-[target.x86_64-pc-windows-gnu]
-##################################################
-
-#linker = "x86_64-w64-mingw32-gcc"
+#linker = "clang"
+linker = "aarch64-linux-gnu-gcc"
 
 #rustflags = ["-C", "link-arg=-fuse-ld=lld"]
 rustflags = []
 
 ##################################################
+[target.aarch64-unknown-linux-musl]
+##################################################
+
+#linker = "clang"
+linker = "aarch64-linux-musl-gcc"
+
+#rustflags = ["-C", "link-arg=-fuse-ld=lld", "-C", "relocation-model=static"]
+rustflags = ["-C", "relocation-model=static"]
+
+##################################################
+[target.x86_64-pc-windows-gnu]
+##################################################
+
+linker = "x86_64-w64-mingw32-gcc"
+
+rustflags = []
+
+##################################################
 [target.x86_64-pc-windows-msvc]
 ##################################################
+
+linker = "lld-link.exe"
 
 rustflags = ["-C", "link-arg=-fuse-ld=lld"]

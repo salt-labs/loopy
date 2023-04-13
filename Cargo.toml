@@ -28,7 +28,6 @@ libz-sys = "1.1.8"
 lzma-sys = "0.1.20"
 log = "0.4.17"
 magic = "0.13.0"
-magic-sys = "0.3.0"
 openssl = { version = "0.10.48", features = ["vendored"] }
 openssl-sys = "0.9.83"
 rand = "0.8.5"
@@ -47,6 +46,11 @@ tokio = { version = "1.26.0", features = ["full"] }
 vcpkg = "0.2.15"
 which = "4.4.0"
 zip = "0.6.4"
+
+[dependencies.magic-sys]
+version = "0.3.0"
+default-features = false
+features = ["v5-38"]
 
 [build-dependencies]
 serde = "1.0.158"

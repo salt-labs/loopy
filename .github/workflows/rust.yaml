@@ -79,6 +79,9 @@ jobs:
           - target: x86_64-pc-windows-gnu
             os: ubuntu-latest
             toolchain: stable
+          - target: x86_64-pc-windows-msvc
+            os: ubuntu-latest
+            toolchain: stable
           - target: x86_64-pc-windows-gnu
             os: windows-latest
             toolchain: stable
@@ -183,8 +186,11 @@ jobs:
             perl \
             pkgconf \
             rust-all \
+            tar \
             wget \
             xutils-dev \
+            zip \
+            unzip \
             zlib1g-dev \
             zstd
 
@@ -271,9 +277,14 @@ jobs:
         shell: powershell
         run: |
           choco install -y activeperl llvm
+          $env:Path = "C:\Perl64\bin;" + $env:Path
+
+      - id: setup_vcpkg
+        name: Setup VCPKG
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        run: |
           cargo install cargo-vcpkg
           cargo vcpkg build
-          $env:Path = "C:\Perl64\bin;" + $env:Path
 
       - id: setup_zigbuild
         name: Setup Zig Build

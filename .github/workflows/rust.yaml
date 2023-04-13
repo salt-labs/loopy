@@ -245,6 +245,19 @@ jobs:
           tar -xzf aarch64-linux-musl-cross.tgz -C /opt/
           echo "PATH=/opt/aarch64-linux-musl-cross/bin:$PATH" >> "${GITHUB_ENV}"
 
+      - id: setup_rust_x86_64-pc-windows-gnu
+        name: Setup the Rust environment for x86_64-pc-windows-gnu
+        if: matrix.target == 'x86_64-pc-windows-gnu' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            binutils-mingw-w64 \
+            g++-mingw-w64 \
+            gcc-mingw-w64 \
+            mingw-w64 \
+            mingw-w64-tools \
+            mingw-w64-x86-64-dev
+
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows
         if: matrix.os == 'windows-latest'
@@ -273,17 +286,26 @@ jobs:
           cargo fmt --version
           cargo fmt --all -- --check
 
-      - id: cross_check
-        name: Run Cross check on Ubuntu
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          cross check --verbose --target ${{ matrix.target }}
-
-      - id: cargo_check_windows
-        name: Run Cargo check on Windows
-        if: matrix.os == 'windows-latest'
+      - id: try_cargo_check
+        name: Run Cargo check
         run: |
           cargo check --verbose --target ${{ matrix.target }}
+        continue-on-error: true
+
+      - id: try_cross_check
+        name: Run Cross check
+        run: |
+          cross check --verbose --target ${{ matrix.target }}
+        continue-on-error: true
+
+      - id: check_failure
+        name: Abort on check failure
+        if: >-
+          steps.try_cargo_check.outcome == 'failure' &&
+          steps.try_cross_check.outcome == 'failure'
+        run: |
+          echo "All check attempts failed!"
+          exit 1
 
       - id: cargo_clippy
         name: Run Cargo clippy
@@ -293,48 +315,57 @@ jobs:
           cargo clippy --version
           cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
 
-      # TODO: cross vs zig.
-      - id: cargo_cross_build
-        name: Run Cargo cross build
+      - id: try_cargo_build
+        name: Run Cargo build
+        run: |
+          cargo build --verbose --target ${{ matrix.target }} --release
+        continue-on-error: true
+
+      - id: try_zigbuild
+        name: Run Zig Build
+        if: steps.try_cargo_build.outcome == 'failure'
+        run: |
+          cargo zigbuild --verbose --target ${{ matrix.target }} --release
+        continue-on-error: true
+
+      - id: try_cross_build
+        name: Run Cross build
+        if: steps.try_zigbuild.outcome == 'failure'
         run: |
           cross build --verbose --target ${{ matrix.target }} --release
         continue-on-error: true
 
-      - id: cargo_zigbuild_ubuntu
-        name: Run Zig Build on Ubuntu
-        if: matrix.os == 'ubuntu-latest' && matrix.target != 'x86_64-pc-windows-gnu'
+      - id: build_failure
+        name: Abort on build failure
+        if: >-
+          steps.try_cargo_build.outcome == 'failure' &&
+          steps.try_cross_build.outcome == 'failure' &&
+          steps.try_zigbuild.outcome == 'failure'
         run: |
-          cargo zigbuild --verbose --target ${{ matrix.target }} --release
+          echo "All build attempts have failed!"
+          exit 1
 
-      - id: cargo_zigbuild_macos
-        name: Run Zig Build on MacOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          cargo zigbuild --verbose --target ${{ matrix.target }} --release
-
-      - id: cargo_build_windows_gnu
-        name: Run Cargo build for Windows GNU
-        if: matrix.os == 'ubuntu-latest' && matrix.target == 'x86_64-pc-windows-gnu'
-        run: |
-          cargo build --verbose --target ${{ matrix.target }} --release
-
-      - id: cargo_build_windows_msvc
-        name: Run Cargo build for Windows MSVC
-        if: matrix.os == 'windows-latest'
-        run: |
-          cargo build --verbose --target ${{ matrix.target }} --release
-
-      - id: cross_test
-        name: Run Cross test on Ubuntu
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          cross test --verbose --target ${{ matrix.target }}
-
-      - id: cargo_test_windows
-        name: Run Cargo test on Windows
-        if: matrix.os == 'windows-latest'
+      - id: try_cargo_test
+        name: Run Cargo test
         run: |
           cargo test --verbose --target ${{ matrix.target }}
+        continue-on-error: true
+
+      - id: try_cross_test
+        name: Run Cross test
+        if: steps.try_cargo_test.outcome == 'failure'
+        run: |
+          cross test --verbose --target ${{ matrix.target }}
+        continue-on-error: true
+
+      - id: test_failure
+        name: Abort on test failure
+        if: >-
+          steps.try_cargo_test.outcome == 'failure' &&
+          steps.try_cross_test.outcome == 'failure'
+        run: |
+          echo "All test attempts have failed!"
+          exit 1
 
       - id: archive_rust
         name: Archive Rust artifacts (cross-platform)

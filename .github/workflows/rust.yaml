@@ -150,7 +150,7 @@ jobs:
         name: Setup the Rust environment for Ubuntu
         if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt update || true
+          sudo apt update
           sudo apt install -y \
             autoconf \
             automake \
@@ -204,12 +204,14 @@ jobs:
             pkg-config \
             zlib \
             zstd
+          echo 'LDFLAGS="-L/usr/local/opt/llvm/lib"' >> "${GITHUB_ENV}"
+          echo 'CPPFLAGS="-I/usr/local/opt/llvm/include"' >> "${GITHUB_ENV}"
 
       - id: setup_rust_x86_64-unknown-linux-gnu
         name: Setup the Rust environment for x86_64-unknown-linux-gnu
         if: matrix.target == 'x86_64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt update || true
+          sudo apt update
           sudo apt install -y \
             gcc-multilib \
             g++-multilib
@@ -218,7 +220,7 @@ jobs:
         name: Setup the Rust environment for x86_64-unknown-linux-musl
         if: matrix.target == 'x86_64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt update || true
+          sudo apt update
           sudo apt install -y \
             musl \
             musl-dev \
@@ -229,7 +231,7 @@ jobs:
         if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
         run: |
           sudo dpkg --add-architecture arm64
-          sudo apt update || true
+          sudo apt update
           sudo apt install -y \
             binutils-aarch64-linux-gnu \
             gcc-aarch64-linux-gnu \
@@ -241,7 +243,7 @@ jobs:
         if: matrix.target == 'aarch64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
         run: |
           sudo dpkg --add-architecture arm64
-          sudo apt update || true
+          sudo apt update
           sudo apt install -y \
             binutils-aarch64-linux-gnu \
             gcc-aarch64-linux-gnu \
@@ -258,7 +260,7 @@ jobs:
         name: Setup the Rust environment for x86_64-pc-windows-gnu
         if: matrix.target == 'x86_64-pc-windows-gnu' && matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt update || true
+          sudo apt update
           sudo apt install -y \
             binutils-mingw-w64 \
             g++-mingw-w64 \

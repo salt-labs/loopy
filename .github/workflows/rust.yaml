@@ -164,11 +164,12 @@ jobs:
             libcurl4-openssl-dev \
             libgcc-10-dev \
             libgcc1 \
-            librust-libm-dev \
+            liblzma-dev \
             libmagic-dev \
             libmagic1 \
             libpq-dev \
             libpthread-stubs0-dev \
+            librust-libm-dev \
             libssl-dev \
             libtool \
             lld \
@@ -296,7 +297,7 @@ jobs:
       - id: cargo_cross_build
         name: Run Cargo cross build
         run: |
-          cargo cross build --verbose --target ${{ matrix.target }} --release
+          cross build --verbose --target ${{ matrix.target }} --release
         continue-on-error: true
 
       - id: cargo_zigbuild_ubuntu

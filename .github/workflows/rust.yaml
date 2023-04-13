@@ -294,12 +294,18 @@ jobs:
 
       - id: cargo_zigbuild
         name: Run Zig Build on Ubuntu
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && matrix.target != 'x86_64-pc-windows-gnu'
         run: |
           cargo zigbuild --verbose --target ${{ matrix.target }} --release
 
-      - id: cargo_build_windows
-        name: Run Cargo build on Windows
+      - id: cargo_build_windows_gnu
+        name: Run Cargo build for Windows GNU
+        if: matrix.os == 'ubuntu-latest' && matrix.target == 'x86_64-pc-windows-gnu'
+        run: |
+          cargo build --verbose --target ${{ matrix.target }} --release
+
+      - id: cargo_build_windows_msvc
+        name: Run Cargo build for Windows MSVC
         if: matrix.os == 'windows-latest'
         run: |
           cargo build --verbose --target ${{ matrix.target }} --release

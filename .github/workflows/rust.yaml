@@ -75,8 +75,12 @@ jobs:
           - target: aarch64-unknown-linux-musl
             os: ubuntu-latest
             toolchain: stable
+          # TODO: Windows GNU cross or on Windows.
           - target: x86_64-pc-windows-gnu
             os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-pc-windows-gnu
+            os: windows-latest
             toolchain: stable
           - target: x86_64-pc-windows-msvc
             os: windows-latest
@@ -195,6 +199,7 @@ jobs:
             file \
             gnu-tar \
             libmagic \
+            llvm \
             openssl \
             pkg-config \
             zlib \
@@ -263,9 +268,9 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          choco install -y activeperl
+          choco install -y activeperl llvm
           cargo install cargo-vcpkg
-          cargo vcpkg --verbose build
+          cargo vcpkg build
           $env:Path = "C:\Perl64\bin;" + $env:Path
 
       - id: setup_zigbuild
@@ -289,13 +294,14 @@ jobs:
       - id: try_cargo_check
         name: Run Cargo check
         run: |
-          cargo check --verbose --target ${{ matrix.target }}
+          cargo check --target ${{ matrix.target }}
         continue-on-error: true
 
       - id: try_cross_check
         name: Run Cross check
+        if: steps.try_cargo_check.outcome == 'failure'
         run: |
-          cross check --verbose --target ${{ matrix.target }}
+          cross check --target ${{ matrix.target }}
         continue-on-error: true
 
       - id: check_failure
@@ -318,21 +324,21 @@ jobs:
       - id: try_cargo_build
         name: Run Cargo build
         run: |
-          cargo build --verbose --target ${{ matrix.target }} --release
+          cargo build --target ${{ matrix.target }} --release
         continue-on-error: true
 
       - id: try_zigbuild
         name: Run Zig Build
         if: steps.try_cargo_build.outcome == 'failure'
         run: |
-          cargo zigbuild --verbose --target ${{ matrix.target }} --release
+          cargo zigbuild --target ${{ matrix.target }} --release
         continue-on-error: true
 
       - id: try_cross_build
         name: Run Cross build
         if: steps.try_zigbuild.outcome == 'failure'
         run: |
-          cross build --verbose --target ${{ matrix.target }} --release
+          cross build --target ${{ matrix.target }} --release
         continue-on-error: true
 
       - id: build_failure
@@ -348,14 +354,14 @@ jobs:
       - id: try_cargo_test
         name: Run Cargo test
         run: |
-          cargo test --verbose --target ${{ matrix.target }}
+          cargo test --target ${{ matrix.target }}
         continue-on-error: true
 
       - id: try_cross_test
         name: Run Cross test
         if: steps.try_cargo_test.outcome == 'failure'
         run: |
-          cross test --verbose --target ${{ matrix.target }}
+          cross test --target ${{ matrix.target }}
         continue-on-error: true
 
       - id: test_failure

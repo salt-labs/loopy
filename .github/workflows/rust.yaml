@@ -292,6 +292,13 @@ jobs:
           cargo clippy --version
           cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
 
+      # TODO: cross vs zig.
+      - id: cargo_cross_build
+        name: Run Cargo cross build
+        run: |
+          cargo cross build --verbose --target ${{ matrix.target }} --release
+        continue-on-error: true
+
       - id: cargo_zigbuild_ubuntu
         name: Run Zig Build on Ubuntu
         if: matrix.os == 'ubuntu-latest' && matrix.target != 'x86_64-pc-windows-gnu'

@@ -213,7 +213,7 @@ jobs:
             zstd
           # shellcheck disable=SC2129
           echo "LDFLAGS=\"$LDFLAGS -L/usr/local/opt/llvm/lib/ -L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++\"" >> "${GITHUB_ENV}"
-          echo "PATH=\"/usr/local/opt/llvm/bin:$PATH\"" >> "${GITHUB_ENV}"
+          echo "/usr/local/opt/llvm/bin" >> "${GITHUB_PATH}"
 
       - id: setup_rust_x86_64-unknown-linux-gnu
         name: Setup the Rust environment for x86_64-unknown-linux-gnu
@@ -258,7 +258,7 @@ jobs:
             musl-tools
           wget https://musl.cc/aarch64-linux-musl-cross.tgz
           tar -xzf aarch64-linux-musl-cross.tgz -C /opt/
-          echo "PATH=/opt/aarch64-linux-musl-cross/bin:$PATH" >> "${GITHUB_ENV}"
+          echo "/opt/aarch64-linux-musl-cross/bin" >> "${GITHUB_PATH}"
 
       - id: setup_rust_x86_64-pc-windows-gnu
         name: Setup the Rust environment for x86_64-pc-windows-gnu
@@ -278,11 +278,12 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          choco install -y activeperl llvm
-          $env:Path = "C:\Perl64\bin;" + $env:Path
+          choco install --force --yes llvm strawberryperl
+          Add-Content $env:GITHUB_PATH "C:\Perl64\bin;"
 
       - id: setup_vcpkg
         name: Setup VCPKG
+        if: matrix.os != 'macos-latest'
         run: |
           cargo install cargo-vcpkg
           cargo vcpkg build

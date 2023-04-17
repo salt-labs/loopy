@@ -283,7 +283,7 @@ jobs:
 
       - id: setup_vcpkg
         name: Setup VCPKG
-        if: matrix.target == 'x86_64-pc-windows-msvc'
+        if: matrix.target == 'x86_64-pc-windows-msvc' || matrix.target == 'x86_64-pc-windows-gnu'
         run: |
           cargo install cargo-vcpkg
           cargo vcpkg build

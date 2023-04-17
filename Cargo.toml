@@ -61,4 +61,4 @@ pkg-config = "0.3.26"
 [package.metadata.vcpkg]
 git = "https://github.com/microsoft/vcpkg"
 rev = "master"
-dependencies = ["curl", "file", "openssl", "zlib"]
+dependencies = ["curl", "libmagic", "openssl", "zlib"]

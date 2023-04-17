@@ -79,9 +79,6 @@ jobs:
           - target: x86_64-pc-windows-gnu
             os: ubuntu-latest
             toolchain: stable
-          - target: x86_64-pc-windows-msvc
-            os: ubuntu-latest
-            toolchain: stable
           - target: x86_64-pc-windows-gnu
             os: windows-latest
             toolchain: stable
@@ -278,7 +275,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: powershell
         run: |
-          choco install --force --yes llvm strawberryperl
+          choco install -y llvm strawberryperl
           Add-Content $env:GITHUB_PATH "C:\Perl64\bin;"
 
       - id: setup_vcpkg

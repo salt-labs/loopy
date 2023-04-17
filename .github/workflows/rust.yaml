@@ -210,8 +210,10 @@ jobs:
             pkg-config \
             zlib \
             zstd
-          echo 'LDFLAGS="-L/usr/local/opt/llvm/lib"' >> "${GITHUB_ENV}"
-          echo 'CPPFLAGS="-I/usr/local/opt/llvm/include"' >> "${GITHUB_ENV}"
+          # shellcheck disable=SC2129
+          echo "LDFLAGS=\"$LDFLAGS -L/usr/local/opt/llvm/lib\"" >> "${GITHUB_ENV}"
+          echo "CPPFLAGS=\"$CPPFLAGS -I/usr/local/opt/llvm/include\"" >> "${GITHUB_ENV}"
+          echo "PATH=\"/usr/local/opt/llvm/bin:$PATH\"" >> "${GITHUB_ENV}"
 
       - id: setup_rust_x86_64-unknown-linux-gnu
         name: Setup the Rust environment for x86_64-unknown-linux-gnu

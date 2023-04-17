@@ -21,7 +21,7 @@ lld = true
 
 linker = "clang"
 
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+rustflags = []
 
 ##################################################
 [target.x86_64-unknown-linux-gnu]

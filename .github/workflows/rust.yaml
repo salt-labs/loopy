@@ -211,7 +211,7 @@ jobs:
             tree \
             zlib \
             zstd
-          tree /usr/local/opt
+          tree /usr/local/opt/llvm
           # shellcheck disable=SC2129
           echo "LDFLAGS=\"$LDFLAGS -L/usr/local/opt/llvm/lib -L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++\"" >> "${GITHUB_ENV}"
           echo "CPPFLAGS=\"$CPPFLAGS -I/usr/local/opt/llvm/include\"" >> "${GITHUB_ENV}"

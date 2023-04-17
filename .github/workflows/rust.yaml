@@ -208,6 +208,7 @@ jobs:
             llvm \
             openssl \
             pkg-config \
+            tree \
             zlib \
             zstd
           tree /usr/local/opt

@@ -1,0 +1,17 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apt-mirror
+spec:
+  rules:
+    - host: apt-mirror.saltlabs.tech
+      http:
+        paths:
+          - backend:
+              service:
+                name: apt-mirror-frontend
+                port:
+                  number: 80
+            path: /
+            pathType: ImplementationSpecific

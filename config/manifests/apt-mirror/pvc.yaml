@@ -1,0 +1,17 @@
+---
+kind: PersistentVolumeClaim
+metadata:
+  name: apt-mirror-data
+  labels:
+    app.kubernetes.io/name: apt-mirror-data
+    app.kubernetes.io/instance: apt-mirror
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: apt-mirror.salt-labs.tech
+spec:
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 300Gi
+  storageClassName: nfs-server

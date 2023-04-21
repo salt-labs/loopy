@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apt-mirror-frontend
+data:
+  config.conf: |
+    server {
+        listen       80;
+        listen  [::]:80;
+
+        location / {
+            root   /usr/share/nginx/html;
+            autoindex on;
+        }
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sources-list
+data:
+  debian-buster-amd64.list: |
+    deb http://apt-mirror.salt-labs.tech/deb.debian.org/debian buster main contrib non-free
+    deb http://apt-mirror.salt-labs.tech/deb.debian.org/debian-security buster/updates main contrib non-free
+    deb http://apt-mirror.salt-labs.tech/deb.debian.org/debian buster-updates main contrib non-free
+  ubuntu-20.04-amd64.list: |
+    deb http://apt-mirror.salt-labs.tech/au.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
+    deb http://apt-mirror.salt-labs.tech/au.archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse
+    deb http://apt-mirror.salt-labs.tech/au.archive.ubuntu.com/ubuntu/ focal-backports main restricted universe multiverse
+    deb http://apt-mirror.salt-labs.tech/au.archive.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse

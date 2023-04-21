@@ -1,0 +1,57 @@
+---
+# REPOFILE=repokeyfile.gpg
+#gpg --show-keys $REPOFILE | grep -Ev 'pub|uid' | cut -c 31-46
+
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: apt-mirror-sync-debian-buster
+spec:
+  schedule: "0 0 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: apt-mirror-sync
+            app.kubernetes.io/instance: apt-mirror
+            app.kubernetes.io/component: apt-mirror-sync
+            app.kubernetes.io/part-of: apt-mirror.salt-labs.tech
+        spec:
+          restartPolicy: Never
+          volumes:
+            - name: apt-mirror-data
+              persistentVolumeClaim:
+                claimName: apt-mirror-data
+          containers:
+            - name: apt-mirror-sync
+              image: ghcr.io/salt-labs/containers/apt-mirror:latest
+              imagePullPolicy: Always
+              resources:
+                limits:
+                  memory: 1000Mi
+                  cpu: 1000m
+                requests:
+                  memory: 1000Mi
+                  cpu: 100m
+              volumeMounts:
+                - mountPath: /srv
+                  name: apt-mirror-data
+              env:
+                - name: KEYS
+                  value: "DC30D7C23CBBABEE 4DFAB270CAA96DFA DCC9EFBF77E11517"
+                - name: DEST
+                  value: /srv/deb.debian.org/debian
+                - name: HOST
+                  value: debian.mirror.serversaustralia.com.au
+                - name: ROOT
+                  value: debian
+                - name: DIST
+                  value: buster,buster-updates
+                - name: SECTION
+                  value: main,contrib,non-free,main/debian-installer
+                - name: ARCH
+                  value: amd64,arm64
+                - name: METHOD
+                  value: https

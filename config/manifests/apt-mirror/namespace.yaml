@@ -5,5 +5,5 @@ metadata:
   name: apt-mirror
   labels:
     app: apt-mirror
-    vendor: dcse
+    vendor: salt-labs
     category: software

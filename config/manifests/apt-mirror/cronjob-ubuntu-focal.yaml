@@ -2,13 +2,16 @@
 # REPOFILE=repokeyfile.gpg
 #gpg --show-keys $REPOFILE | grep -Ev 'pub|uid' | cut -c 31-46
 
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: apt-mirror-sync-ubuntu-focal
+  name: sync-ubuntu-focal
+  namespace: apt-mirror
 spec:
   schedule: "0 0 * * *"
   concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       template:
@@ -40,7 +43,7 @@ spec:
                   name: apt-mirror-data
               env:
                 - name: KEYS
-                  value: "DC30D7C23CBBABEE 4DFAB270CAA96DFA DCC9EFBF77E11517"
+                  value: "3B4FE6ACC0B21F32 871920D1991BC93C"
                 - name: DEST
                   value: /srv/archive.ubuntu.com/ubuntu
                 - name: HOST
@@ -52,6 +55,6 @@ spec:
                 - name: SECTION
                   value: main,restricted,universe,multiverse
                 - name: ARCH
-                  value: amd64,arm64
+                  value: amd64
                 - name: METHOD
                   value: http

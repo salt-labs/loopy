@@ -1,7 +1,11 @@
 ---
+# kubectl cp file.deb pod:/srv/
+
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: apt-mirror-data
+  namespace: apt-mirror
   labels:
     app.kubernetes.io/name: apt-mirror-data
     app.kubernetes.io/instance: apt-mirror
@@ -14,4 +18,5 @@ spec:
   resources:
     requests:
       storage: 300Gi
-  storageClassName: nfs-server
+  #storageClassName: nfs-server
+  storageClassName: local-storage

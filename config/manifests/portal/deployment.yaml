@@ -1,0 +1,68 @@
+---
+# kubectl debug -it $POD_NAME --image=busybox --target=caddy --namespace=portal
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal
+  namespace: portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: portal
+  template:
+    metadata:
+      labels:
+        app: portal
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: caddy
+          image: ghcr.io/salt-labs/containers/caddy:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          env:
+            - name: LOGLEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: portal
+                  key: loglevel
+            - name: GIT_REPO
+              valueFrom:
+                configMapKeyRef:
+                  name: portal
+                  key: repo
+            - name: GIT_BRANCH
+              valueFrom:
+                configMapKeyRef:
+                  name: portal
+                  key: branch
+          volumeMounts:
+            - name: portal-workdir
+              mountPath: /workdir
+            - name: portal-public
+              mountPath: /public
+            - name: caddyfile
+              mountPath: /etc/caddy/
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+            requests:
+              cpu: 250m
+              memory: 256Mi
+      volumes:
+        - name: portal-workdir
+          persistentVolumeClaim:
+            claimName: portal-workdir
+        - name: portal-public
+          persistentVolumeClaim:
+            claimName: portal-public
+        - name: caddyfile
+          configMap:
+            name: portal
+            items:
+              - key: caddyfile
+                path: Caddyfile

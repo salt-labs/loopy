@@ -67,7 +67,7 @@ if [[ ${1} == "${EXECUTABLE}" ]]; then
 		--cleanup \
 		--method="${METHOD}" \
 		--progress \
-		"${OTHERARGS}" \
+		"${OTHERARGS:-}" \
 		--rsync-extra="${RSYNCEXTRA:=trace}" \
 		"$@"
 

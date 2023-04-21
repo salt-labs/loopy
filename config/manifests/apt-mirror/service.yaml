@@ -3,6 +3,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: apt-mirror-frontend
+  namespace: apt-mirror
 spec:
   selector:
     app.kubernetes.io/name: apt-mirror-frontend

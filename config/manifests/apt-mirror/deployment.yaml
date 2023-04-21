@@ -3,10 +3,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: apt-mirror
+  namespace: apt-mirror
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/component: apt-mirror
+      app.kubernetes.io/component: frontend
       app.kubernetes.io/part-of: apt-mirror.salt-labs.tech
   replicas: 1
   template:

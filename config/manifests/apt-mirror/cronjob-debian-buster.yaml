@@ -5,10 +5,13 @@
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
-  name: apt-mirror-sync-debian-buster
+  name: sync-debian-buster
+  namespace: apt-mirror
 spec:
   schedule: "0 0 * * *"
   concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       template:

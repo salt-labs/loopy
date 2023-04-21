@@ -1,0 +1,4 @@
+---
+# TOKEN_FILE=./client_configuration_token.tok
+# kubectl create configmap licensing-config -n gpu-operator --from-file=./gridd.conf --from-file=$TOKEN_FILE \
+# --dry-run=client -o yaml > configmap.yaml

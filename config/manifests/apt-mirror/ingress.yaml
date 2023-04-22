@@ -4,6 +4,12 @@ kind: Ingress
 metadata:
   name: apt-mirror
   namespace: apt-mirror
+  annotations:
+    kubernetes.io/ingress.allow-http: "true"
+    projectcontour.io/num-retries: "3"
+    projectcontour.io/retry-on: "true"
+    projectcontour.io/response-timeout: "15"
+    projectcontour.io/force-ssl-redirect: "true"
 spec:
   rules:
     - host: apt-mirror.saltlabs.tech
@@ -16,3 +22,4 @@ spec:
                   number: 80
             path: /
             pathType: ImplementationSpecific
+

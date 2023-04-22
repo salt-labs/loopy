@@ -5,5 +5,5 @@ metadata:
   name: apt-mirror
   labels:
     app: apt-mirror
-    vendor: salt-labs
+    vendor: saltlabs
     category: software

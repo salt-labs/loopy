@@ -5,10 +5,10 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: sync-ubuntu-focal
+  name: sync-ubuntu
   namespace: apt-mirror
 spec:
-  schedule: "0 0 * * *"
+  schedule: "0 10 * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
@@ -20,16 +20,20 @@ spec:
             app.kubernetes.io/name: apt-mirror-sync
             app.kubernetes.io/instance: apt-mirror
             app.kubernetes.io/component: apt-mirror-sync
-            app.kubernetes.io/part-of: apt-mirror.salt-labs.tech
+            app.kubernetes.io/part-of: apt-mirror.saltlabs.tech
         spec:
           restartPolicy: Never
           volumes:
             - name: apt-mirror-data
               persistentVolumeClaim:
                 claimName: apt-mirror-data
+            - name: ca-certificates
+              configMap:
+                name: ca-certificates
+                defaultMode: 0644
           containers:
             - name: apt-mirror-sync
-              image: ghcr.io/salt-labs/containers/apt-mirror:latest
+              image: harbor.saltlabs.tech/ghcr.io/salt-labs/containers/apt-mirror:latest
               imagePullPolicy: Always
               resources:
                 limits:
@@ -39,22 +43,37 @@ spec:
                   memory: 1000Mi
                   cpu: 100m
               volumeMounts:
-                - mountPath: /srv
-                  name: apt-mirror-data
+                - name: apt-mirror-data
+                  mountPath: /srv
+                  readOnly: false
+                - name: ca-certificates
+                  mountPath: /usr/local/share/ca-certificates
+                  readOnly: false
               env:
                 - name: KEYS
                   value: "3B4FE6ACC0B21F32 871920D1991BC93C"
                 - name: DEST
-                  value: /srv/archive.ubuntu.com/ubuntu
+                  value: /srv/os/ubuntu
                 - name: HOST
-                  value: au.archive.ubuntu.com
+                  value: mirror.aarnet.edu.au
                 - name: ROOT
                   value: ubuntu
                 - name: DIST
-                  value: focal,focal-updates,focal-backports,focal-security
+                  value: "focal,focal-updates,focal-backports,focal-security,jammy,jammy-updates,jammy-backports,jammy-security"
                 - name: SECTION
                   value: main,restricted,universe,multiverse
                 - name: ARCH
                   value: amd64
                 - name: METHOD
-                  value: http
+                  value: https
+                - name: HTTP_PROXY
+                  value: http://proxy.saltlabs.tech:3128
+                - name: HTTPS_PROXY
+                  value: http://proxy.saltlabs.tech:3128
+                - name: https_proxy
+                  value: http://proxy.saltlabs.tech:3128
+                - name: http_proxy
+                  value: http://proxy.saltlabs.tech:3128
+                - name: NO_PROXY
+                  value: "172.16.0.0/16,172.17.0.0.16,172.18.0.0/16,*.mil.au,*.svc,*.cluster.local"
+

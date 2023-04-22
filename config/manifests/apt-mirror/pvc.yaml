@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/name: apt-mirror-data
     app.kubernetes.io/instance: apt-mirror
     app.kubernetes.io/component: backend
-    app.kubernetes.io/part-of: apt-mirror.salt-labs.tech
+    app.kubernetes.io/part-of: apt-mirror.saltlabs.tech
 spec:
   accessModes:
     - ReadWriteMany
@@ -18,5 +18,4 @@ spec:
   resources:
     requests:
       storage: 300Gi
-  #storageClassName: nfs-server
-  storageClassName: local-storage
+  storageClassName: nfs-server

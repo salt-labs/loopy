@@ -9,7 +9,7 @@ spec:
     matchLabels:
       app.kubernetes.io/component: frontend
       app.kubernetes.io/part-of: apt-mirror.saltlabs.tech
-  replicas: 3
+  replicas: 5
   template:
     metadata:
       labels:
@@ -20,16 +20,16 @@ spec:
     spec:
       containers:
         - name: apt-mirror-frontend
-          image: harbor.saltlabs.tech/docker.io/nginx:1.19.7-alpine
+          image: harbor.saltlabs.tech/docker.io/caddy:latest
           livenessProbe:
             httpGet:
-              path: /?liveness
+              path: /liveness
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 5
           readinessProbe:
             httpGet:
-              path: /?readiness
+              path: /readiness
               port: 80
             initialDelaySeconds: 5
             periodSeconds: 10
@@ -42,21 +42,24 @@ spec:
               memory: 128Mi
               cpu: 250m
           volumeMounts:
-            - mountPath: /usr/share/nginx/html
-              name: apt-mirror-data
-            - mountPath: /etc/nginx/conf.d
-              name: nginx
-            - mountPath: /usr/share/nginx/html/keys
-              name: gpg-keys
-            - mountPath: /usr/share/nginx/html/sources.list
-              name: sources-list
+            - name: caddyfile
+              mountPath: /etc/caddy
+            - name: apt-mirror-data
+              mountPath: /public
+            - name: gpg-keys
+              mountPath: /public/keys
+            - name: sources-list
+              mountPath: /public/sources.list
       volumes:
         - name: apt-mirror-data
           persistentVolumeClaim:
             claimName: apt-mirror-data
-        - name: nginx
+        - name: caddyfile
           configMap:
             name: apt-mirror-frontend
+            items:
+              - key: caddyfile
+                path: Caddyfile
         - name: gpg-keys
           secret:
             secretName: gpg-keys

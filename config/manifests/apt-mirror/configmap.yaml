@@ -5,15 +5,26 @@ metadata:
   name: apt-mirror-frontend
   namespace: apt-mirror
 data:
-  config.conf: |
-    server {
-        listen       80;
-        listen  [::]:80;
+  caddyfile: |
+    :80 {
+      respond /liveness 200
+      respond /readiness 200
+      metrics /metrics
 
-        location / {
-            root   /usr/share/nginx/html;
-            autoindex on;
-        }
+      root * /public
+
+      encode zstd gzip
+
+      file_server browse {
+        hide .git .tmp .temp
+        precompressed zstd br gzip
+      }
+
+      log {
+        output stdout
+        format console
+      }
+
     }
 
 ---

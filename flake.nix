@@ -10,7 +10,14 @@
       flake = true;
     };
 
-    # https://devenv.sh/
+    nixpkgs-unstable = {
+      type = "github";
+      owner = "NixOS";
+      repo = "nixpkgs";
+      ref = "nixos-unstable";
+      flake = true;
+    };
+
     devenv = {
       type = "github";
       owner = "cachix";
@@ -33,6 +40,7 @@
   outputs = {
     self,
     nixpkgs,
+    nixpkgs-unstable,
     devenv,
     fenix,
     ...

@@ -58,27 +58,31 @@ in
             hunspell
             hunspellDicts.en_AU-large
 
+            # Kubernetes
+            kubectl
+            kind
+
             # Rust
             rustup
             trunk
-            openssl
-            pkgconf
             (rustProfile.withComponents cargoComponents)
 
             # Other
             binutils
             bzip2
+            clang
             cmake
             figlet
             file
+            gcc
             gnutar
             lld
             openssl
+            perl
+            pkgconf
             xxd
             zlib
             zstd
-            gcc
-            clang
           ]
           ++ supportedPkgs;
 

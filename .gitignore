@@ -25,4 +25,4 @@ vendor/
 TODO/
 
 # Ignore the local pre-commit
-#.pre-commit-config.yaml
+.pre-commit-config.yaml

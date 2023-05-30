@@ -6,7 +6,7 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-22.11";
+      ref = "nixos-23.05";
       flake = true;
     };
 

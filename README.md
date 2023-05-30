@@ -6,7 +6,7 @@ A Kubernetes packaging helper utility that tries to prevent you from going [loop
 
 Loopy is useful for those times when you find yourself testing the same [inner loop](https://tanzu.vmware.com/developer/tv/talk/118/) during development.
 
-If you find yourself installing and upgrading the same set of Helm charts on a `kind` cluster after only a couple lines of changes to a values file this too l might help you.
+If you find yourself installing and upgrading the same set of Helm charts on a `kind` cluster after only a couple lines of changes to a values file this tool might be of use.
 
 ![loopy](./docs/images/loopy.gif)
 

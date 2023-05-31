@@ -68,6 +68,10 @@ in
             (rustProfile.withComponents cargoComponents)
 
             # Other
+            dotnet-sdk_7
+            jre
+
+            # Package
             binutils
             bzip2
             clang
@@ -77,12 +81,14 @@ in
             gcc
             gnutar
             lld
+            glibc
             openssl
             perl
             pkgconf
             xxd
             zlib
             zstd
+            xz
           ]
           ++ supportedPkgs;
 

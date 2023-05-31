@@ -20,11 +20,12 @@ use figlet_rs::FIGfont;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
+use infer::Infer;
 use log::{debug, error, info};
 use reqwest::Client;
 use std::env;
 use std::fs::{self, create_dir_all, File};
-use std::io::{self, stdout, BufReader, Read, Seek, SeekFrom, Write};
+use std::io::{self, stdout, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tar::Archive;
@@ -260,47 +261,48 @@ pub fn update_path(dir: &PathBuf) {
 /// A tuple with a boolean indicating if the file is an archive and the mime type of the file.
 ///
 fn detect_archive(path: &Path) -> Result<(bool, String)> {
-    let cookie =
-        magic::Cookie::open(magic::CookieFlags::ERROR).context("Failed to open magic Cookie")?;
-    cookie
-        .load::<&str>(&[])
-        .context("Failed to load magic Cookie")?;
+    let mut buffer = Vec::new();
+    let mut file = fs::File::open(path)?;
+    file.read_to_end(&mut buffer)?;
 
-    let mut file = std::fs::File::open(path).context(format!("Failed to open file: {:?}", path))?;
-    let mut buffer = [0; 1024];
-    let count = file.read(&mut buffer).context("Failed to read file")?;
-    let mime_type = cookie
-        .buffer(&buffer[..count])
-        .context("Failed to get mime type")?;
+    let info = Infer::new().get(&buffer);
 
-    debug!(
-        "Checking for mime type: {} in all defined archive types: {:?}",
-        mime_type, MIME_TYPES
-    );
+    match info {
+        Some(t) => {
+            debug!(
+                "Checking for mime type: {} in all defined archive types: {:?}",
+                t.mime_type(),
+                MIME_TYPES
+            );
 
-    if MIME_TYPES
-        .all_types()
-        .iter()
-        .flatten()
-        .any(|&t| mime_type.starts_with(t))
-    {
-        file.seek(SeekFrom::Start(0))?;
-        let mut buf = [0u8; 8];
-        file.read_exact(&mut buf)?;
-        let is_archive: bool = true;
-        debug!(
-            "An archive of mime type {} was detected: {}",
-            mime_type,
-            &path.display()
-        );
-        Ok((is_archive, mime_type))
-    } else {
-        debug!(
-            "A mime type of {} was detected, this is not an archive: {}",
-            mime_type,
-            &path.display()
-        );
-        Ok((false, mime_type))
+            if MIME_TYPES
+                .all_types()
+                .iter()
+                .flatten()
+                .any(|&bin_type| t.mime_type().starts_with(bin_type))
+            {
+                debug!(
+                    "An archive of mime type {} was detected: {}",
+                    t.mime_type(),
+                    path.display()
+                );
+                Ok((true, t.mime_type().to_string()))
+            } else {
+                debug!(
+                    "A mime type of {} was detected, this is not an archive: {}",
+                    t.mime_type(),
+                    path.display()
+                );
+                Ok((false, t.mime_type().to_string()))
+            }
+        }
+        None => {
+            debug!(
+                "Unable to determine the Mime type on path: {}",
+                path.display()
+            );
+            Ok((false, "unknown".to_string()))
+        }
     }
 }
 
@@ -314,30 +316,38 @@ fn detect_archive(path: &Path) -> Result<(bool, String)> {
 /// This is not a perfect solution, but it works for the most part.
 ///
 pub fn detect_binary(path: &Path) -> Result<bool> {
-    let cookie =
-        magic::Cookie::open(magic::CookieFlags::ERROR).context("Failed to open magic Cookie")?;
-    cookie
-        .load::<&str>(&[])
-        .context("Failed to load magic Cookie")?;
+    let mut buffer = Vec::new();
+    let mut file = fs::File::open(path)?;
+    file.read_to_end(&mut buffer)?;
 
-    let mut file = std::fs::File::open(path).context(format!("Failed to open file: {:?}", path))?;
-    let mut buffer = [0; 1024];
-    let count = file.read(&mut buffer).context("Failed to read file")?;
-    let mime_type = cookie
-        .buffer(&buffer[..count])
-        .context("Failed to get mime type")?;
-    debug!(
-        "The Mime type on path: {} is: {}",
-        path.display(),
-        mime_type
-    );
+    let info = Infer::new().get(&buffer);
 
-    debug!(
-        "Checking for mime type: {} in all defined archive types: {:?}",
-        mime_type, MIME_TYPES.bin
-    );
+    match info {
+        Some(t) => {
+            debug!(
+                "The Mime type on path: {} is: {}",
+                path.display(),
+                t.mime_type()
+            );
+            debug!(
+                "Checking for mime type: {} in all defined archive types: {:?}",
+                t.mime_type(),
+                MIME_TYPES.bin
+            );
 
-    Ok(MIME_TYPES.bin.iter().any(|&t| mime_type.starts_with(t)))
+            Ok(MIME_TYPES
+                .bin
+                .iter()
+                .any(|&bin_type| t.mime_type().starts_with(bin_type)))
+        }
+        None => {
+            debug!(
+                "Unable to determine the Mime type on path: {}",
+                path.display()
+            );
+            Ok(false)
+        }
+    }
 }
 
 /// Extract Archive.

@@ -33,32 +33,34 @@ rustPlatform.buildRustPackage {
     cargo
     rustc
 
-    #binutils
-    #bzip2
+    binutils
+    bzip2
     clang
     cmake
-    #figlet
-    #file
+    figlet
+    file
     gcc
-    #gnutar
+    gnutar
     lld
-    #openssl
-    pkgconf
+    glibc
+    openssl
     perl
-    #xxd
-    #zlib
-    #zstd
+    pkgconf
+    xxd
+    zlib
+    zstd
+    xz
   ];
 
   # hostPlatform
   buildInputs = with pkgs; [
-    #bzip2
+    bzip2
     figlet
     file
-    #gnutar
+    gnutar
     openssl
-    #zlib
-    #zstd
+    zlib
+    zstd
   ];
 
   postPatch = ''

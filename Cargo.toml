@@ -27,7 +27,7 @@ kube = "0.82.2"
 libz-sys = "1.1.8"
 lzma-sys = "0.1.20"
 log = "0.4.17"
-magic = "0.13.0"
+infer = "0.13.0"
 openssl = { version = "0.10.53", features = ["vendored"] }
 openssl-sys = { version = "0.9.88", features = ["vendored"] }
 rand = "0.8.5"

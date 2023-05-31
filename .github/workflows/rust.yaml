@@ -169,8 +169,6 @@ jobs:
             libgcc-10-dev \
             libgcc1 \
             liblzma-dev \
-            libmagic-dev \
-            libmagic1 \
             libpq-dev \
             libpthread-stubs0-dev \
             librust-libm-dev \
@@ -201,7 +199,6 @@ jobs:
             figlet \
             file \
             gnu-tar \
-            libmagic \
             llvm \
             openssl \
             pkg-config \

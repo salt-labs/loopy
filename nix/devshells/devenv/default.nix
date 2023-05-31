@@ -84,6 +84,7 @@ in
             glibc
             openssl
             perl
+            pkg-config
             pkgconf
             xxd
             zlib

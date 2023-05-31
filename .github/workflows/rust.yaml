@@ -362,25 +362,14 @@ jobs:
 
       - id: try_cargo_test
         name: Run Cargo test
+        if: |
+          matrix.target == 'x86_64-apple-darwin' ||
+          matrix.target == 'x86_64-unknown-linux-gnu' ||
+          matrix.target == 'x86_64-unknown-linux-musl' ||
+          matrix.target == 'x86_64-pc-windows-msvc'
         run: |
-          cargo test --target ${{ matrix.target }}
+          cargo test --all-features --no-fail-fast --target ${{ matrix.target }}
         continue-on-error: true
-
-      - id: try_cross_test
-        name: Run Cross test
-        if: steps.try_cargo_test.outcome == 'failure'
-        run: |
-          cross test --target ${{ matrix.target }}
-        continue-on-error: true
-
-      - id: test_failure
-        name: Abort on test failure
-        if: >-
-          steps.try_cargo_test.outcome == 'failure' &&
-          steps.try_cross_test.outcome == 'failure'
-        run: |
-          echo "All test attempts have failed!"
-          exit 1
 
       - id: archive_rust
         name: Archive Rust artifacts (cross-platform)

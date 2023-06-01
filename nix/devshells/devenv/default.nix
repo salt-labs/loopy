@@ -3,18 +3,8 @@
   system,
   pkgs,
   crossPkgs,
-  rustProfile,
   ...
 }: let
-  cargoComponents = with rustProfile.withComponents; [
-    "cargo"
-    "clippy"
-    "rust-src"
-    "rustc"
-    "rustfmt"
-  ];
-
-  # Check if the package is supported on the current system
   muslSupported = !(builtins.elem system ["aarch64-darwin" "x86_64-darwin"]);
   musl =
     if muslSupported
@@ -63,9 +53,7 @@ in
             kind
 
             # Rust
-            rustup
             trunk
-            (rustProfile.withComponents cargoComponents)
 
             # Other
             dotnet-sdk_7
@@ -81,7 +69,6 @@ in
             gcc
             gnutar
             lld
-            glibc
             openssl
             perl
             pkg-config

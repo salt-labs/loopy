@@ -64,6 +64,8 @@ pub struct Tool {
 pub struct Test {
     /// Test command.
     pub command: String,
+    /// Test arguments.
+    pub args: Option<Vec<String>>,
     /// stdout
     pub stdout: Option<String>,
     /// stderr

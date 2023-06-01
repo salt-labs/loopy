@@ -46,16 +46,16 @@
     ...
   } @ inputs: let
     supportedSystems = [
-      "aarch64-darwin"
-      "aarch64-linux"
-      "x86_64-darwin"
       "x86_64-linux"
     ];
 
-    _targets = [
+    _rustTargets = [
+      "aarch64-linux"
+      "i686-linux"
+      "x86_64-linux"
+      #####
       "aarch64-apple-darwin"
       "aarch64-unknown-linux-gnu"
-      "i686-unknown-linux-gnu"
       "x86_64-apple-darwin"
       "x86_64-unknown-linux-gnu"
     ];
@@ -139,9 +139,6 @@
       system = buildPlatform;
       pkgs = pkgsImportCrossSystem buildPlatform buildPlatform;
 
-      # Rust
-      rustProfile = fenix.packages.${system}.complete;
-
       # Host Platform
       crossPkgs = pkgsImportCrossSystem buildPlatform hostPlatform;
     in {
@@ -150,7 +147,6 @@
         inherit system;
         inherit pkgs;
         inherit crossPkgs;
-        inherit rustProfile;
       };
     }));
 

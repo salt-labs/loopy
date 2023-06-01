@@ -3,21 +3,34 @@
 //! This module contains utility functions used throughout the program.
 //!
 
+use crate::config::*;
+use crate::helm::{helm_process_charts, helm_process_repos, helm_repo};
+use crate::kubectl::{
+    kubectl_apply_manifest, kubectl_delete_manifest, kubectl_namespace, kubectl_process_manifests,
+    ApplyFn,
+};
+use crate::PACKAGE_NAME;
 use anyhow::{anyhow, Context, Result};
-use crossterm::style::{self, Color, Stylize};
+use crossterm::{
+    event::{self, Event, KeyCode},
+    style::{self, Color, Stylize},
+    terminal,
+};
 use figlet_rs::FIGfont;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use indicatif::{ProgressBar, ProgressStyle};
+use infer::Infer;
 use log::{debug, error, info};
 use reqwest::Client;
 use std::env;
 use std::fs::{self, create_dir_all, File};
-use std::io::{self, BufReader, Read, Seek, SeekFrom, Write};
+use std::io::{self, stdout, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use tar::Archive;
 use tempfile::TempDir;
+use tokio::macros::support::Future;
 use which::which;
 use zip::ZipArchive;
 
@@ -92,6 +105,38 @@ pub fn create_dir(dir: &PathBuf) -> Result<()> {
             error!("Failed to create directory: {:?} - {}", dir, e);
             Err(e.into())
         }
+    }
+}
+
+/// Pause
+///
+/// Waits for a user to continue.
+///
+pub fn pause(message: &str) -> Result<()> {
+    // Display the message to stdout
+    println!("{}", message);
+    stdout().flush()?;
+
+    // Enable raw mode
+    let err_msg = "Failed to enable terminal raw mode";
+    let _raw = terminal::enable_raw_mode().context(err_msg);
+
+    // Read the next event
+    let event = event::read()?;
+
+    // Disable raw mode
+    let err_msg = "Failed to disable terminal raw mode";
+    terminal::disable_raw_mode().context(err_msg)?;
+
+    // Check if the event was the ENTER key
+    if let Event::Key(key_event) = event {
+        if key_event.code == KeyCode::Enter {
+            Ok(())
+        } else {
+            Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "User cancelled.").into())
+        }
+    } else {
+        Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unexpected input event").into())
     }
 }
 
@@ -216,47 +261,48 @@ pub fn update_path(dir: &PathBuf) {
 /// A tuple with a boolean indicating if the file is an archive and the mime type of the file.
 ///
 fn detect_archive(path: &Path) -> Result<(bool, String)> {
-    let cookie =
-        magic::Cookie::open(magic::CookieFlags::ERROR).context("Failed to open magic Cookie")?;
-    cookie
-        .load::<&str>(&[])
-        .context("Failed to load magic Cookie")?;
+    let mut buffer = Vec::new();
+    let mut file = fs::File::open(path)?;
+    file.read_to_end(&mut buffer)?;
 
-    let mut file = std::fs::File::open(path).context(format!("Failed to open file: {:?}", path))?;
-    let mut buffer = [0; 1024];
-    let count = file.read(&mut buffer).context("Failed to read file")?;
-    let mime_type = cookie
-        .buffer(&buffer[..count])
-        .context("Failed to get mime type")?;
+    let info = Infer::new().get(&buffer);
 
-    debug!(
-        "Checking for mime type: {} in all defined archive types: {:?}",
-        mime_type, MIME_TYPES
-    );
+    match info {
+        Some(t) => {
+            debug!(
+                "Checking for mime type: {} in all defined archive types: {:?}",
+                t.mime_type(),
+                MIME_TYPES
+            );
 
-    if MIME_TYPES
-        .all_types()
-        .iter()
-        .flatten()
-        .any(|&t| mime_type.starts_with(t))
-    {
-        file.seek(SeekFrom::Start(0))?;
-        let mut buf = [0u8; 8];
-        file.read_exact(&mut buf)?;
-        let is_archive: bool = true;
-        debug!(
-            "An archive of mime type {} was detected: {}",
-            mime_type,
-            &path.display()
-        );
-        Ok((is_archive, mime_type))
-    } else {
-        debug!(
-            "A mime type of {} was detected, this is not an archive: {}",
-            mime_type,
-            &path.display()
-        );
-        Ok((false, mime_type))
+            if MIME_TYPES
+                .all_types()
+                .iter()
+                .flatten()
+                .any(|&bin_type| t.mime_type().starts_with(bin_type))
+            {
+                debug!(
+                    "An archive of mime type {} was detected: {}",
+                    t.mime_type(),
+                    path.display()
+                );
+                Ok((true, t.mime_type().to_string()))
+            } else {
+                debug!(
+                    "A mime type of {} was detected, this is not an archive: {}",
+                    t.mime_type(),
+                    path.display()
+                );
+                Ok((false, t.mime_type().to_string()))
+            }
+        }
+        None => {
+            debug!(
+                "Unable to determine the Mime type on path: {}",
+                path.display()
+            );
+            Ok((false, "unknown".to_string()))
+        }
     }
 }
 
@@ -270,30 +316,38 @@ fn detect_archive(path: &Path) -> Result<(bool, String)> {
 /// This is not a perfect solution, but it works for the most part.
 ///
 pub fn detect_binary(path: &Path) -> Result<bool> {
-    let cookie =
-        magic::Cookie::open(magic::CookieFlags::ERROR).context("Failed to open magic Cookie")?;
-    cookie
-        .load::<&str>(&[])
-        .context("Failed to load magic Cookie")?;
+    let mut buffer = Vec::new();
+    let mut file = fs::File::open(path)?;
+    file.read_to_end(&mut buffer)?;
 
-    let mut file = std::fs::File::open(path).context(format!("Failed to open file: {:?}", path))?;
-    let mut buffer = [0; 1024];
-    let count = file.read(&mut buffer).context("Failed to read file")?;
-    let mime_type = cookie
-        .buffer(&buffer[..count])
-        .context("Failed to get mime type")?;
-    debug!(
-        "The Mime type on path: {} is: {}",
-        path.display(),
-        mime_type
-    );
+    let info = Infer::new().get(&buffer);
 
-    debug!(
-        "Checking for mime type: {} in all defined archive types: {:?}",
-        mime_type, MIME_TYPES.bin
-    );
+    match info {
+        Some(t) => {
+            debug!(
+                "The Mime type on path: {} is: {}",
+                path.display(),
+                t.mime_type()
+            );
+            debug!(
+                "Checking for mime type: {} in all defined archive types: {:?}",
+                t.mime_type(),
+                MIME_TYPES.bin
+            );
 
-    Ok(MIME_TYPES.bin.iter().any(|&t| mime_type.starts_with(t)))
+            Ok(MIME_TYPES
+                .bin
+                .iter()
+                .any(|&bin_type| t.mime_type().starts_with(bin_type)))
+        }
+        None => {
+            debug!(
+                "Unable to determine the Mime type on path: {}",
+                path.display()
+            );
+            Ok(false)
+        }
+    }
 }
 
 /// Extract Archive.
@@ -697,4 +751,198 @@ pub fn run_command(
         String::from_utf8_lossy(&output.stderr).to_string(),
         output.status,
     ))
+}
+
+/// Run tests.
+///
+/// Runs the provided tests in parallel.
+///
+/// # Arguments
+///
+/// * `tests` - A slice of `Test` structs.
+///
+/// # Returns
+///
+/// A `Result` containing;
+///   - `()` if successful.
+///  - An `anyhow::Error` if any of the tests failed.
+///
+pub async fn run_tests(tests: &[Test]) -> Result<()> {
+    for test in tests {
+        println!("Running test: '{}'", test.command);
+        let (stdout, stderr, status) = run_command(&test.command, &[])?;
+
+        // Does the stdout match the expected result?
+        if let Some(expected_stdout) = &test.stdout {
+            if stdout.trim() != *expected_stdout {
+                return Err(anyhow::anyhow!(
+                    "Test failed. Expected stdout: '{}', Actual stdout: '{}'",
+                    expected_stdout,
+                    stdout.trim()
+                ));
+            }
+        }
+
+        // Does the stderr match the expected result?
+        if let Some(expected_stderr) = &test.stderr {
+            if stderr.trim() != *expected_stderr {
+                return Err(anyhow::anyhow!(
+                    "Test failed. Expected stderr: '{}', Actual stderr: '{}'",
+                    expected_stderr,
+                    stderr.trim()
+                ));
+            }
+        }
+
+        // Does the status code matches the expected status code?
+        if let Some(expected_status_code) = test.status {
+            if status.code().unwrap() != expected_status_code {
+                return Err(anyhow::anyhow!(
+                    "Test failed. Expected status code: '{}', Actual status code: '{}'",
+                    expected_status_code,
+                    status.code().unwrap()
+                ));
+            }
+        } else if !status.success() {
+            return Err(anyhow::anyhow!(
+                "Test failed. Expected status code: '0', Actual status code: '{}'",
+                status.code().unwrap()
+            ));
+        }
+
+        println!("Test passed");
+    }
+
+    Ok(())
+}
+
+/// Process install or uninstall action.
+///
+/// # Arguments
+///
+/// * `action` - The action to perform (install or uninstall)
+/// * `config_loaded` - The loaded configuration
+///
+/// # Returns
+///
+/// A `Result` containing;
+///   - `()` if successful.
+///  - An error if it failed.
+///
+/// # Example
+///
+/// ```rust
+/// use crate::config::Config;
+/// use crate::error::Result;
+/// use crate::helm::process_install_uninstall;
+///
+/// let config_loaded: Config = Config::new()?;
+/// process_install_uninstall("install", &config_loaded)?;
+/// ```
+///
+pub async fn process_install_uninstall<'a>(action: &str, config: &'a Config) -> Result<()> {
+    /*
+    ------------------------------------
+    Dependencies
+    ------------------------------------
+    */
+
+    // Process Helm repositories
+    helm_process_repos(&config.dependencies.helm.repositories, action).await?;
+
+    // Update Helm repositories only during installation
+    if action == "install" {
+        println!("Updating Helm repositories...");
+        helm_repo("update", None, None).await?;
+        println!("Successfully updated Helm repositories");
+    }
+
+    // Define apply_fn for processing manifests
+    let apply_fn: ApplyFn<'a> = match action {
+        "install" => |manifest| -> Box<
+            dyn Future<Output = Result<(), anyhow::Error>> + Send + Unpin + 'a,
+        > { Box::new(Box::pin(kubectl_apply_manifest(manifest))) },
+        _ => {
+            |manifest| -> Box<dyn Future<Output = Result<(), anyhow::Error>> + Send + Unpin + 'a> {
+                Box::new(Box::pin(kubectl_delete_manifest(manifest)))
+            }
+        }
+    };
+
+    // Process Manifests
+    kubectl_process_manifests(&config.dependencies.manifests, action, apply_fn).await?;
+
+    // Process Helm charts
+    helm_process_charts(&config.dependencies.helm.charts, action).await?;
+
+    // Run tests
+    if !config.dependencies.tests.is_empty() {
+        run_tests(&config.dependencies.tests).await?;
+    }
+
+    // Pause to allow the user to review the dependencies and make any manual changes.
+    match pause(
+        "
+        Dependency installation complete.
+        Press ENTER to continue with application installation or any other key to exit.
+        ",
+    ) {
+        Ok(_) => {
+            debug!("User pressed ENTER, continuing with installation.");
+        }
+        Err(_) => {
+            println!("Exiting at user request.");
+            std::process::exit(0);
+        }
+    }
+
+    /*
+    ------------------------------------
+    Applications
+    ------------------------------------
+    */
+
+    // Process Helm repositories
+    helm_process_repos(&config.application.helm.repositories, action).await?;
+
+    // Update Helm repositories only during installation.
+    if action == "install" {
+        println!("Updating Helm repositories...");
+        helm_repo("update", None, None).await?;
+        println!("Successfully updated Helm repositories");
+    }
+
+    // Process Manifests
+    kubectl_process_manifests(&config.application.manifests, action, apply_fn).await?;
+
+    // Process Helm charts
+    helm_process_charts(&config.application.helm.charts, action).await?;
+
+    // Run tests
+    if !config.application.tests.is_empty() {
+        run_tests(&config.application.tests).await?;
+    }
+
+    /*
+    ------------------------------------
+    Marker
+    ------------------------------------
+    */
+
+    // Create or delete the namespace
+    let namespace_action = match action {
+        "install" => "create",
+        "uninstall" => "delete",
+        _ => panic!("Invalid action"),
+    };
+    println!("{} namespace: {}", namespace_action, PACKAGE_NAME);
+
+    let err_msg = format!("Failed to {} namespace {}", namespace_action, PACKAGE_NAME);
+    kubectl_namespace(namespace_action, PACKAGE_NAME)
+        .await
+        .context(err_msg)?;
+
+    println!("The {} action completed successfully.", action);
+
+    Ok(())
 }

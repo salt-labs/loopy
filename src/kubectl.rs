@@ -3,8 +3,9 @@
 //! This module contains functions for interacting with Kubernetes using the kubectl CLI.
 //!
 
+use crate::config::Manifests;
+use crate::utils::run_command;
 use crate::PACKAGE_NAME;
-use crate::{config::Manifests, utils::run_command};
 
 use anyhow::{anyhow, Context, Result};
 use k8s_openapi::api::core::v1::{Namespace, NamespaceSpec};
@@ -15,7 +16,12 @@ use log::{debug, error, info, warn};
 use serde_json::json;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
+use std::future::Future;
 use std::path::PathBuf;
+
+/// A function that applies or deletes a Kubernetes manifest.
+pub type ApplyFn<'a> =
+    fn(&'a Manifests) -> Box<dyn Future<Output = Result<(), anyhow::Error>> + Send + Unpin + 'a>;
 
 /// Kubectl apply or delete a URL.
 ///
@@ -188,7 +194,7 @@ async fn kubectl_manifests(
             10
         } else {
             debug!("Namespace {} does not exist", PACKAGE_NAME);
-            60
+            30
         };
 
         // TODO: Fix more jankiness
@@ -682,4 +688,49 @@ pub async fn kubectl_namespace_delete(name: &str) -> Result<()> {
         info!("Namespace {} does not exist, skipping", name);
         Ok(())
     }
+}
+
+/// Process Kubernetes manifests.
+///
+/// Applies Kubernetes manifests.
+/// Returns an error if the application fails.
+///
+/// # Arguments
+///
+/// * `manifests` - The Kubernetes manifests to apply
+/// * `action` - The action to perform on the manifests
+///
+/// # Examples
+///
+/// ```rust
+/// use loopy::kubectl::process_manifests;
+/// let result = process_manifests(&manifests, "apply");
+/// assert!(result.is_ok());
+/// ```
+///
+pub async fn kubectl_process_manifests<'a>(
+    manifests: &'a [Manifests],
+    action: &str,
+    apply_fn: ApplyFn<'a>,
+) -> Result<()> {
+    if manifests.is_empty() {
+        println!(
+            "No Kubernetes {} manifests were found in the configuration file. Skipping...",
+            action
+        );
+    } else {
+        for manifest in manifests {
+            println!("{} Kubernetes manifests for: {}", action, manifest.name);
+            let err_msg = format!(
+                "Failed to {} Kubernetes manifests for {}",
+                action, manifest.name
+            );
+            apply_fn(manifest).await.context(err_msg)?;
+            println!(
+                "Successfully {} Kubernetes manifest: {}",
+                action, manifest.name
+            );
+        }
+    }
+    Ok(())
 }

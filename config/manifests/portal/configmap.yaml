@@ -1,0 +1,26 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: portal
+  namespace: portal
+data:
+  # The log level. Possible values are: "debug", "info", "warn", "error".
+  loglevel: "debug"
+
+  # Define the git repo that is used to build the portal site.
+  repo: "https://github.com/salt-labs/portal.git"
+  branch: "trunk"
+
+  # The caddy configuration file.
+  caddyfile: |
+    :80 {
+      root * /public
+      encode gzip
+      try_files {path} /index.html
+      file_server
+      log {
+        output stdout
+        format console
+      }
+    }

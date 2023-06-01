@@ -1,0 +1,75 @@
+---
+# REPOFILE=repokeyfile.gpg
+#gpg --show-keys $REPOFILE | grep -Ev 'pub|uid' | cut -c 31-46
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sync-ubuntu
+  namespace: apt-mirror
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: apt-mirror-sync
+        app.kubernetes.io/instance: apt-mirror
+        app.kubernetes.io/component: apt-mirror-sync
+        app.kubernetes.io/part-of: apt-mirror.saltlabs.tech
+    spec:
+      restartPolicy: Never
+      volumes:
+        - name: apt-mirror-data
+          persistentVolumeClaim:
+            claimName: apt-mirror-data
+        - name: ca-certificates
+          configMap:
+            name: ca-certificates
+            defaultMode: 0644
+      containers:
+        - name: apt-mirror-sync
+          image: ghcr.io/salt-labs/containers/apt-mirror:latest
+          imagePullPolicy: Always
+          resources:
+            limits:
+              memory: 1000Mi
+              cpu: 1000m
+            requests:
+              memory: 1000Mi
+              cpu: 100m
+          volumeMounts:
+            - name: apt-mirror-data
+              mountPath: /srv
+              readOnly: false
+            - name: ca-certificates
+              mountPath: /usr/local/share/ca-certificates
+              readOnly: false
+          env:
+            - name: KEYS
+              value: "3B4FE6ACC0B21F32 871920D1991BC93C"
+            - name: DEST
+              value: /srv/os/ubuntu
+            - name: HOST
+              value: mirror.aarnet.edu.au
+            - name: ROOT
+              value: ubuntu
+            - name: DIST
+              value: "focal,focal-updates,focal-backports,focal-security,jammy,jammy-updates,jammy-backports,jammy-security"
+            - name: SECTION
+              value: main,restricted,universe,multiverse
+            - name: ARCH
+              value: amd64
+            - name: METHOD
+              value: https
+            - name: HTTP_PROXY
+              value: http://proxy.saltlabs.tech:3128
+            - name: HTTPS_PROXY
+              value: http://proxy.saltlabs.tech:3128
+            - name: https_proxy
+              value: http://proxy.saltlabs.tech:3128
+            - name: http_proxy
+              value: http://proxy.saltlabs.tech:3128
+            - name: NO_PROXY
+              value: "172.16.0.0/16,172.17.0.0.16,172.18.0.0/16,*.mil.au,*.svc,*.cluster.local"
+

@@ -23,3 +23,6 @@ vendor/
 
 # Ignore WIP
 TODO/
+
+# Ignore the local pre-commit
+.pre-commit-config.yaml

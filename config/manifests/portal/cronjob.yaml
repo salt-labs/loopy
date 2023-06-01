@@ -1,0 +1,72 @@
+---
+# kubectl run --rm -i --tty debug-hugo --image=ghcr.io/salt-labs/containers/hugo:latest --restart=Never --namespace=portal --command -- /bin/sh
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: portal-update
+  namespace: portal
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  #backoffLimit: 0
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: hugo
+              image: ghcr.io/salt-labs/containers/hugo:latest
+              imagePullPolicy: Always
+              #command:
+              #  - "/bin/sh"
+              #  - "-c"
+              #  - |
+              #    set -e
+              #    echo ##### DEBUG #####
+              #    echo "Log Level: ${LOGLEVEL}"
+              #    echo "Git Repo: ${GIT_REPO}"
+              #    echo "Git Branch: ${GIT_BRANCH}"
+              #    BASE_URL="$(echo ${GIT_REPO} | awk -F/ '{print $3}')"
+              #    echo "Base URL: ${BASE_URL}"
+              #    curl --insecure --verbose "${BASE_URL}" || true
+              #    echo "Sleeping for debug..."
+              #    sleep 100000
+              env:
+                - name: LOGLEVEL
+                  valueFrom:
+                    configMapKeyRef:
+                      name: portal
+                      key: loglevel
+                - name: GIT_REPO
+                  valueFrom:
+                    configMapKeyRef:
+                      name: portal
+                      key: repo
+                - name: GIT_BRANCH
+                  valueFrom:
+                    configMapKeyRef:
+                      name: portal
+                      key: branch
+              volumeMounts:
+                - name: portal-workdir
+                  mountPath: /workdir
+                - name: portal-public
+                  mountPath: /public
+              resources:
+                limits:
+                  cpu: 1000m
+                  memory: 1024Mi
+                requests:
+                  cpu: 250m
+                  memory: 256Mi
+          volumes:
+            - name: portal-workdir
+              persistentVolumeClaim:
+                claimName: portal-workdir
+            - name: portal-public
+              persistentVolumeClaim:
+                claimName: portal-public

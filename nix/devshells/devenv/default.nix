@@ -1,16 +1,20 @@
 {
   inputs,
+  system,
   pkgs,
-  rustProfile,
+  crossPkgs,
   ...
 }: let
-  cargoComponents = with rustProfile.withComponents; [
-    "cargo"
-    "clippy"
-    "rust-src"
-    "rustc"
-    "rustfmt"
+  muslSupported = !(builtins.elem system ["aarch64-darwin" "x86_64-darwin"]);
+  musl =
+    if muslSupported
+    then pkgs.musl
+    else null;
+
+  specialPkgs = [
+    musl
   ];
+  supportedPkgs = builtins.filter (pkg: pkg != null) specialPkgs;
 in
   inputs.devenv.lib.mkShell {
     inherit inputs;
@@ -20,47 +24,61 @@ in
       {
         # https://devenv.sh/reference/options/
 
-        packages = with pkgs; [
-          figlet
-          hello
+        packages = with pkgs;
+          [
+            figlet
+            hello
 
-          nixpkgs-fmt
-          statix
+            nixpkgs-fmt
+            statix
 
-          sops
-          #sops-init-gpg-key
-          #sops-import-keys-hook
-          ssh-to-age
-          ssh-to-pgp
-          age
+            sops
+            #sops-init-gpg-key
+            #sops-import-keys-hook
+            ssh-to-age
+            ssh-to-pgp
+            age
 
-          bash
-          bash-completion
+            bash
+            bash-completion
 
-          gnutar
+            gnutar
 
-          # Spelling
-          hunspell
-          hunspellDicts.en_AU-large
+            # Spelling
+            hunspell
+            hunspellDicts.en_AU-large
 
-          # Rust
-          rustup
-          trunk
-          openssl
-          pkg-config
-          (rustProfile.withComponents cargoComponents)
+            # Kubernetes
+            kubectl
+            kind
 
-          # Other
-          bzip2
-          cmake
-          figlet
-          file
-          gnutar
-          openssl
-          xxd
-          zlib
-          zstd
-        ];
+            # Rust
+            trunk
+
+            # Other
+            dotnet-sdk_7
+            jre
+
+            # Package
+            binutils
+            bzip2
+            clang
+            cmake
+            figlet
+            file
+            gcc
+            gnutar
+            lld
+            openssl
+            perl
+            pkg-config
+            pkgconf
+            xxd
+            zlib
+            zstd
+            xz
+          ]
+          ++ supportedPkgs;
 
         env = {
           DEVENV_DEVSHELL_ROOT = builtins.toString ./.;

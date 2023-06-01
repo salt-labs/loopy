@@ -4,7 +4,9 @@
 
 A Kubernetes packaging helper utility that tries to prevent you from going [loopy](https://www.urbandictionary.com/define.php?term=Loopy).
 
-It's useful for those times when you find yourself testing the same [inner loop](https://tanzu.vmware.com/developer/tv/talk/118/) like repeatedly installing and upgrading the same set of Helm charts on a `kind` cluster after only a couple lines of changes to a values file.
+Loopy is useful for those times when you find yourself testing the same [inner loop](https://tanzu.vmware.com/developer/tv/talk/118/) during development.
+
+If you find yourself installing and upgrading the same set of Helm charts on a `kind` cluster after only a couple lines of changes to a values file this tool might be of use.
 
 ![loopy](./docs/images/loopy.gif)
 
@@ -77,4 +79,38 @@ Once that's done you can add the `vendor` folder to the PATH of your current she
 
 ```bash
 export PATH=$(pwd)/vendor:$PATH
+```
+
+## Development
+
+There are a number of packages required for development.
+
+You can either use the DevShell contained within this repositories Nix flake or install some of the following packages depending on your Operating System.
+
+```bash
+# CentOS
+yum install \
+    autoconf \
+    clang \
+    cmake \
+    file-devel \
+    gcc \
+    git \
+    make \
+    openssl \
+    openssl-devel
+
+# Ubuntu
+sudo apt update
+sudo apt install -y \
+    autoconf \
+    clang \
+    cmake \
+    gcc \
+    git \
+    libmagic-dev \
+    libssl-dev \
+    make \
+    openssl \
+    zstd
 ```

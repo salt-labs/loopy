@@ -6,11 +6,18 @@
       type = "github";
       owner = "NixOS";
       repo = "nixpkgs";
-      ref = "nixos-22.11";
+      ref = "nixos-23.05";
       flake = true;
     };
 
-    # https://devenv.sh/
+    nixpkgs-unstable = {
+      type = "github";
+      owner = "NixOS";
+      repo = "nixpkgs";
+      ref = "nixos-unstable";
+      flake = true;
+    };
+
     devenv = {
       type = "github";
       owner = "cachix";
@@ -33,68 +40,69 @@
   outputs = {
     self,
     nixpkgs,
+    nixpkgs-unstable,
     devenv,
     fenix,
     ...
   } @ inputs: let
-    buildSystem = "x86_64-linux";
-
-    hostSystems = [
-      "aarch64-darwin"
-      "aarch64-linux"
-      "x86_64-darwin"
+    supportedSystems = [
       "x86_64-linux"
     ];
 
-    _targets = [
+    _rustTargets = [
+      "aarch64-linux"
+      "i686-linux"
+      "x86_64-linux"
+      #####
       "aarch64-apple-darwin"
       "aarch64-unknown-linux-gnu"
-      "i686-unknown-linux-gnu"
       "x86_64-apple-darwin"
       "x86_64-unknown-linux-gnu"
     ];
 
     forAllSystems = f:
-      builtins.listToAttrs (map (name: {
-          inherit name;
-          value = f name;
+      builtins.listToAttrs (map (buildPlatform: {
+          name = buildPlatform;
+          value = builtins.listToAttrs (map (hostPlatform: {
+              name = hostPlatform;
+              value = f buildPlatform hostPlatform;
+            })
+            supportedSystems);
         })
-        hostSystems);
-
-    pkgsImportSystem = system:
-      import nixpkgs {
-        inherit system;
-      };
+        supportedSystems);
 
     pkgsImportCrossSystem = buildPlatform: hostPlatform:
-      if buildPlatform == hostPlatform
-      then
-        import inputs.nixpkgs {
-          system = buildPlatform;
-          localSystem = buildPlatform;
-          crossSystem = buildPlatform;
-        }
-      else
-        import inputs.nixpkgs {
-          system = buildPlatform;
-          localSystem = buildPlatform;
-          crossSystem = hostPlatform;
-        };
-
-    _pkgsAllowUnfree = {
-      nixpkgs = {
+      import nixpkgs {
+        system = buildPlatform;
+        overlays = [];
         config = {
           allowUnfree = true;
           allowUnfreePredicate = _: true;
         };
+        crossSystem =
+          if buildPlatform == hostPlatform
+          then null
+          else {
+            config = hostPlatform;
+          };
       };
-    };
+
+    flattenPackages = systems:
+      builtins.foldl' (acc: system:
+        builtins.foldl' (
+          innerAcc: hostPlatform:
+            innerAcc // {"${system}.${hostPlatform}" = systems.${system}.${hostPlatform};}
+        )
+        acc (builtins.attrNames systems.${system})) {} (builtins.attrNames systems);
   in {
-    packages = forAllSystems (hostPlatform: let
+    ###############
+    ## Packages
+    ###############
+
+    packages = flattenPackages (forAllSystems (buildPlatform: hostPlatform: let
       # Build Platform
-      system = buildSystem;
-      inherit (self.packages.${system}) default;
-      pkgs = pkgsImportSystem system;
+      system = buildPlatform;
+      pkgs = pkgsImportCrossSystem buildPlatform buildPlatform;
 
       # Rust
       rustProfile = fenix.packages.${system}.complete;
@@ -103,34 +111,50 @@
         cargo = rustToolchain;
         rustc = rustToolchain;
       };
+
       # Host Platform
-      crossPkgs = pkgsImportCrossSystem system hostPlatform;
+      crossPkgs = pkgsImportCrossSystem buildPlatform hostPlatform;
+      #defaultPackage.${buildPlatform} = self.packages."${buildPlatform}.${hostPlatform}".loopy;
     in {
       loopy = import ./nix/packages/loopy {
         inherit pkgs;
         inherit crossPkgs;
         inherit rustPlatform;
       };
+    }));
 
-      default = self.packages.${system}.loopy;
-    });
+    # Set the default package for the current system.
+    defaultPackage = builtins.listToAttrs (map (system: {
+        name = system;
+        value = self.packages."${system}.${system}".loopy;
+      })
+      supportedSystems);
 
-    devShells = forAllSystems (hostPlatform: let
+    ###############
+    ## DevShells
+    ###############
+
+    devShells = flattenPackages (forAllSystems (buildPlatform: hostPlatform: let
       # Build Platform
-      system = buildSystem;
-      inherit (self.packages.${system}) default;
-      pkgs = pkgsImportSystem system;
+      system = buildPlatform;
+      pkgs = pkgsImportCrossSystem buildPlatform buildPlatform;
 
-      # Rust
-      rustProfile = fenix.packages.${system}.complete;
+      # Host Platform
+      crossPkgs = pkgsImportCrossSystem buildPlatform hostPlatform;
     in {
       devenv = import ./nix/devshells/devenv {
         inherit inputs;
+        inherit system;
         inherit pkgs;
-        inherit rustProfile;
+        inherit crossPkgs;
       };
+    }));
 
-      default = self.devShells.${system}.devenv;
-    });
+    # Set the default devshell to the one for the current system.
+    devShell = builtins.listToAttrs (map (system: {
+        name = system;
+        value = self.devShells."${system}.${system}".devenv;
+      })
+      supportedSystems);
   };
 }

@@ -7,6 +7,7 @@
 name: Rust
 
 on:
+  # A pull request will trigger a build and test.
   pull_request:
     branches:
       - trunk
@@ -18,23 +19,79 @@ on:
       - review_requested
     paths-ignore:
       - "docs/**"
-      - "**.md"
+      - "*.md"
+
+  # A successful completion of this worflow will trigger a release.
+  push:
+    branches:
+      - "trunk"
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
 
 env:
+  ORGANISATION: ${{ github.repository_owner }}
+  PROJECT: ${{ github.event.repository.name }}
+
+  BRANCH_NAME_CURRENT: ${{ github.head_ref || github.ref_name }}
+  BRANCH_NAME_DEFAULT: ${{ github.event.repository.default_branch }}
+
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 defaults:
   run:
     shell: bash
 
 jobs:
-  #########################
-  # Test the package for linting
-  # and ensure formatted correctly
-  #########################
+  tags:
+    name: Check tags
 
-  cargo_check:
-    name: Cargo Check
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: true
+
+    steps:
+      - id: checkout_repository
+        name: Checkout repository with all history and tags
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 0
+          submodules: false
+          clean: true
+          persist-credentials: true
+
+      - id: cargo_version
+        name: Read Cargo.toml version
+        run: |
+          wget --output-document yj https://github.com/sclevine/yj/releases/latest/download/yj-linux-amd64
+          chmod +x yj
+          VERSION="$(./yj -tj < Cargo.toml | jq -r .package.version)"
+          echo "VERSION=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Package version: ${VERSION}"
+
+      - id: check_tags
+        name: Check git tags
+        env:
+          TAG: ${{ steps.cargo_version.outputs.VERSION }}
+        run: |
+          git fetch --tags
+          if git show-ref --tags --verify --quiet "refs/tags/$TAG"
+          then
+            echo "The Release tag ${TAG} already exists, did you forget to bump the version?"
+            exit 1
+          else
+            echo "The Release tag ${TAG} does not exist."
+          fi
+
+  build:
+    name: Build
+
+    needs:
+      - tags
 
     runs-on: ${{ matrix.os }}
 
@@ -44,30 +101,46 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            toolchain: stable
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             toolchain: stable
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
             toolchain: stable
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            toolchain: stable
-          #- target: x86_64-pc-windows-msvc
-          #  os: windows-latest
-          #  toolchain: stable
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             toolchain: stable
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            toolchain: stable
+          # TODO: Windows GNU cross or on Windows.
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            toolchain: stable
+          #- target: x86_64-pc-windows-gnu
+          #  os: windows-latest
+          #  toolchain: stable
+          #- target: x86_64-pc-windows-msvc
+          #  os: windows-latest
+          #  toolchain: stable
 
     steps:
       - id: setup_rust
         name: Setup the Rust environment
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          target: ${{ matrix.target }}
+          targets: ${{ matrix.target }}
           toolchain: ${{ matrix.toolchain }}
-          default: true
+          components: rustfmt, clippy
+
+      - id: setup_zig
+        name: Setup the Zig environment
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: master
 
       - id: checkout_repository
         name: Checkout repository
@@ -82,101 +155,183 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.cargo/registry
-          key: ${{ matrix.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ matrix.target }}-cargo-registry-
+            ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
 
       - id: cache_artifacts_cargo_index
         name: Cache Cargo index
         uses: actions/cache@v2
         with:
           path: ~/.cargo/git
-          key: ${{ matrix.target }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ matrix.target }}-cargo-index-
+            ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
 
       - id: cache_artifacts_cargo_target
         name: Cache Cargo build
         uses: actions/cache@v2
         with:
           path: target/release
-          key: ${{ matrix.target }}-target-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ matrix.target }}-target-
+            ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
 
       - id: cache_artifacts_vcpkg
         name: Cache vcpkg
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-latest'
         uses: actions/cache@v2
         with:
           path: vcpkg
-          key: ${{ matrix.target }}-vcpkg-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ matrix.target }}-vcpkg-
+            ${{ runner.os }}-${{ matrix.target }}-${{ matrix.toolchain }}-cargo-registry-
 
-      - id: setup_rust_arm64
-        name: Setup the Rust environment for ARM64
-        if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
+      - id: setup_rust_ubuntu
+        name: Setup the Rust environment for Ubuntu
+        if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt install gcc-multilib
+          sudo apt update
+          sudo apt install -y \
+            autoconf \
+            automake \
+            binutils \
+            build-essential \
+            ca-certificates \
+            clang \
+            cmake \
+            curl \
+            file \
+            g++ \
+            gcc \
+            git \
+            libc6-dev \
+            libcurl4-openssl-dev \
+            libgcc-10-dev \
+            libgcc1 \
+            liblzma-dev \
+            libpq-dev \
+            libpthread-stubs0-dev \
+            librust-libm-dev \
+            libssl-dev \
+            libtool \
+            lld \
+            llvm \
+            make \
+            mingw-w64 \
+            perl \
+            pkgconf \
+            rust-all \
+            tar \
+            wget \
+            xutils-dev \
+            zip \
+            unzip \
+            zlib1g-dev \
+            zstd
 
       - id: setup_rust_macos
         name: Setup the Rust environment for MacOS
-        if: matrix.target == 'x86_64-apple-darwin' && matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-latest'
         run: |
-          brew install libmagic openssl pkg-config bzip2 figlet file gnu-tar zlib zstd
+          brew update
+          brew install \
+            bzip2 \
+            figlet \
+            file \
+            gnu-tar \
+            llvm \
+            openssl \
+            pkg-config \
+            tree \
+            zlib \
+            zstd
+          # shellcheck disable=SC2129
+          echo "LDFLAGS=\"$LDFLAGS -L/usr/local/opt/llvm/lib/ -L/usr/local/opt/llvm/lib/c++ -Wl,-rpath,/usr/local/opt/llvm/lib/c++\"" >> "${GITHUB_ENV}"
+          echo "/usr/local/opt/llvm/bin" >> "${GITHUB_PATH}"
 
-      - id: setup_rust_musl
-        name: Setup the Rust environment for MUSL
-        if: matrix.target == 'x86_64-unknown-linux-musl'
+      - id: setup_rust_x86_64-unknown-linux-gnu
+        name: Setup the Rust environment for x86_64-unknown-linux-gnu
+        if: matrix.target == 'x86_64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
         run: |
           sudo apt update
-          sudo apt install -y musl-tools && matrix.os == 'ubuntu-latest'
+          sudo apt install -y \
+            gcc-multilib \
+            g++-multilib
+
+      - id: setup_rust_x86_64-unknown-linux-musl
+        name: Setup the Rust environment for x86_64-unknown-linux-musl
+        if: matrix.target == 'x86_64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            musl \
+            musl-dev \
+            musl-tools
+
+      - id: setup_rust_aarch64_unknown_linux_gnu
+        name: Setup the Rust environment for aarch64-unknown-linux-gnu
+        if: matrix.target == 'aarch64-unknown-linux-gnu' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            binutils-aarch64-linux-gnu \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu
+
+      - id: setup_rust_aarch64_unknown_linux_musl
+        name: Setup the Rust environment for aarch64-unknown-linux-musl
+        if: matrix.target == 'aarch64-unknown-linux-musl' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            binutils-aarch64-linux-gnu \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            musl \
+            musl-dev \
+            musl-tools
+          wget https://musl.cc/aarch64-linux-musl-cross.tgz
+          tar -xzf aarch64-linux-musl-cross.tgz -C /opt/
+          echo "/opt/aarch64-linux-musl-cross/bin" >> "${GITHUB_PATH}"
+
+      - id: setup_rust_x86_64-pc-windows-gnu
+        name: Setup the Rust environment for x86_64-pc-windows-gnu
+        if: matrix.target == 'x86_64-pc-windows-gnu' && matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            binutils-mingw-w64 \
+            g++-mingw-w64 \
+            gcc-mingw-w64 \
+            mingw-w64 \
+            mingw-w64-tools \
+            mingw-w64-x86-64-dev
 
       - id: setup_rust_windows
         name: Setup the Rust environment for Windows
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-latest'
         shell: powershell
-        env:
-          VCPKG_INSTALLED: ${{ github.workspace }}/vcpkg/installed/
-          #VCPKG_DEFAULT_TRIPLET: "x64-windows-static" # (libcmt.lib)
-          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md" # (msvcrt.lib)
         run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          Push-Location -Path "vcpkg"
-          Start-Process ".\bootstrap-vcpkg.bat"
-          vcpkg.exe install curl:${env:VCPKG_DEFAULT_TRIPLET} libmagic:${env:VCPKG_DEFAULT_TRIPLET} openssl:${env:VCPKG_DEFAULT_TRIPLET} zlib:${env:VCPKG_DEFAULT_TRIPLET}
-          vcpkg.exe integrate install
-          Pop-Location
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64"
-          tree /F ${env:VCPKG_INSTALLED}
+          choco install -y llvm strawberryperl
+          Add-Content $env:GITHUB_PATH "C:\Perl64\bin;"
 
-      - id: cargo_check
-        name: Run Cargo check
-        if: matrix.target != 'x86_64-pc-windows-msvc'
+      - id: setup_vcpkg
+        name: Setup VCPKG
+        if: matrix.os != 'macos-latest'
         run: |
-          cargo --version
-          cargo check --verbose
+          cargo install cargo-vcpkg
+          cargo vcpkg build
 
-      - id: cargo_check_windows
-        name: Run Cargo check (Windows)
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
-        shell: powershell
-        env:
-          VCPKGRS_DYNAMIC: "1"
-          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
-          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
-          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
+      - id: setup_zigbuild
+        name: Setup Zig Build
         run: |
-          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
-          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
-          $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
-          $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
-          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
-          cargo --version
-          cargo check --verbose
+          cargo install cargo-zigbuild
+
+      - id: setup_cross
+        name: Setup Cross Build
+        run: |
+          cargo install cross
 
       - id: cargo_fmt
         name: Run Cargo format
@@ -186,62 +341,97 @@ jobs:
           cargo fmt --version
           cargo fmt --all -- --check
 
+      - id: try_cargo_check
+        name: Run Cargo check
+        run: |
+          cargo check --target ${{ matrix.target }}
+        continue-on-error: true
+
+      - id: try_cross_check
+        name: Run Cross check
+        if: steps.try_cargo_check.outcome == 'failure'
+        run: |
+          cross check --target ${{ matrix.target }}
+        continue-on-error: true
+
+      - id: check_failure
+        name: Abort on check failure
+        if: >-
+          steps.try_cargo_check.outcome == 'failure' &&
+          steps.try_cross_check.outcome == 'failure'
+        run: |
+          echo "All check attempts failed!"
+          exit 1
+
       - id: cargo_clippy
         name: Run Cargo clippy
         run: |
           rustup component add clippy
           rustup component list --toolchain ${{ matrix.toolchain }}
           cargo clippy --version
-          cargo clippy --all --all-features -- -D warnings
+          cargo clippy --all --all-features --target ${{ matrix.target }} -- -D warnings
 
-      - id: cargo_build
+      - id: try_cargo_build
         name: Run Cargo build
-        if: matrix.target != 'x86_64-pc-windows-msvc'
         run: |
-          cargo --version
-          cargo build --verbose
+          cargo build --target ${{ matrix.target }} --release
+        continue-on-error: true
 
-      - id: cargo_build_windows
-        name: Run Cargo build (Windows)
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
-        shell: powershell
+      - id: try_zigbuild
+        name: Run Zig Build
+        if: steps.try_cargo_build.outcome == 'failure'
+        run: |
+          cargo zigbuild --target ${{ matrix.target }} --release
+        continue-on-error: true
+
+      - id: try_cross_build
+        name: Run Cross build
+        if: steps.try_zigbuild.outcome == 'failure'
+        run: |
+          cross build --target ${{ matrix.target }} --release
+        continue-on-error: true
+
+      - id: build_failure
+        name: Abort on build failure
+        if: >-
+          steps.try_cargo_build.outcome == 'failure' &&
+          steps.try_cross_build.outcome == 'failure' &&
+          steps.try_zigbuild.outcome == 'failure'
+        run: |
+          echo "All build attempts have failed!"
+          exit 1
+
+      - id: try_cargo_test
+        name: Run Cargo test
+        if: |
+          matrix.target == 'x86_64-apple-darwin' ||
+          matrix.target == 'x86_64-unknown-linux-gnu' ||
+          matrix.target == 'x86_64-unknown-linux-musl' ||
+          matrix.target == 'x86_64-pc-windows-msvc'
+        run: |
+          cargo test --all-features --no-fail-fast --target ${{ matrix.target }}
+        continue-on-error: true
+
+      - id: archive_rust
+        name: Archive Rust artifacts (cross-platform)
+        if: >-
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/${{ env.BRANCH_NAME_DEFAULT}}'
+        shell: pwsh
+        working-directory: "${{ github.workspace }}"
+        run: >
+          ./.github/scripts/archive.ps1
+          -Target ${{ matrix.target }}
+          -LogLevel debug
+          -DieHard
+          -OutputDir artifacts
+
+      - id: upload_artifacts
+        name: Upload artifacts
+        uses: actions/upload-artifact@v3
         env:
-          VCPKGRS_DYNAMIC: "1"
-          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
-          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
-          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
-        run: |
-          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
-          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
-          $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
-          $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
-          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
-          cargo build --verbose
-
-      - id: cargo_test
-        name: Run Cargo tests
-        if: matrix.target != 'x86_64-pc-windows-msvc'
-        run: |
-          cargo --version
-          cargo test --verbose
-
-      - id: cargo_test_windows
-        name: Run Cargo tests (Windows)
-        if: matrix.target == 'x86_64-pc-windows-msvc' && matrix.os == 'windows-latest'
-        shell: powershell
-        env:
-          VCPKGRS_DYNAMIC: "1"
-          VCPKG_ROOT: ${{ github.workspace }}\vcpkg
-          VCPKG_DEFAULT_TRIPLET: "x64-windows-static-md"
-          VCPKG_INSTALLED: ${{ github.workspace }}\vcpkg\installed
-        run: |
-          $env:LIBMAGIC_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET"
-          $env:OPENSSL_LIB_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib"
-          $env:OPENSSL_INCLUDE_DIR = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include"
-          $env:LIB = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\lib;$env:LIB"
-          $env:INCLUDE = "$env:VCPKG_INSTALLED\$env:VCPKG_DEFAULT_TRIPLET\include;$env:INCLUDE"
-          $env:RUSTFLAGS = "-Ctarget-feature=+crt-static -L${env:LIBMAGIC_DIR}\lib"
-          cargo test --verbose
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: ${{ env.PROJECT }}-${{ matrix.target }}
+          path: artifacts/${{ env.PROJECT }}-${{ matrix.target }}.zip
+          retention-days: 7

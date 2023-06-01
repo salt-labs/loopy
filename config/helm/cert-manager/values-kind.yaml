@@ -1,0 +1,376 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: ""
+
+kubeVersion: ""
+
+nameOverride: ""
+
+fullnameOverride: ""
+
+commonLabels:
+  app.kubernetes.io/deployed-by: Helm
+
+commonAnnotations: {}
+
+extraDeploy: []
+
+logLevel: 2
+
+clusterResourceNamespace: ""
+
+leaderElection:
+  namespace: "kube-system"
+
+installCRDs: true
+
+replicaCount: 1
+
+startupapicheck:
+  timeout: 5m
+
+controller:
+  replicaCount: 1
+  image:
+    registry: docker.io
+    repository: bitnami/cert-manager
+    tag: 1.11.0-debian-11-r24
+    digest: ""
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    debug: false
+  acmesolver:
+    image:
+      registry: docker.io
+      repository: bitnami/acmesolver
+      tag: 1.11.0-debian-11-r22
+      digest: ""
+      pullPolicy: IfNotPresent
+      pullSecrets: []
+      debug: false
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+
+  podAffinityPreset: ""
+
+  podAntiAffinityPreset: soft
+
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+
+  affinity: {}
+
+  nodeSelector: {}
+
+  containerPort: 9402
+
+  command: []
+
+  args: []
+
+  priorityClassName: ""
+
+  runtimeClassName: ""
+
+  schedulerName: ""
+
+  topologySpreadConstraints: []
+
+  hostAliases: []
+
+  tolerations: []
+
+  podLabels: {}
+
+  podAnnotations: {}
+
+  dnsPolicy: ""
+
+  dnsConfig: {}
+
+  lifecycleHooks: {}
+
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+
+  extraArgs: []
+
+  extraEnvVars: []
+
+  extraEnvVarsCM: ""
+
+  extraEnvVarsSecret: ""
+
+  extraVolumes: []
+
+  extraVolumeMounts: []
+
+  initContainers: []
+
+  sidecars: []
+
+  serviceAccount:
+    create: true
+    name: cert-manager-controller
+    annotations: {}
+    automountServiceAccountToken: true
+
+webhook:
+  replicaCount: 1
+  image:
+    registry: docker.io
+    repository: bitnami/cert-manager-webhook
+    tag: 1.11.0-debian-11-r22
+    digest: ""
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    debug: false
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+
+  podAffinityPreset: ""
+
+  podAntiAffinityPreset: soft
+
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+
+    values: []
+
+  affinity: {}
+
+  nodeSelector: {}
+
+  containerPort: 10250
+
+  httpsPort: 443
+
+  command: []
+
+  args: []
+
+  livenessProbe:
+    enabled: true
+    path: /livez
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 3
+
+  readinessProbe:
+    enabled: true
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 1
+    successThreshold: 1
+    failureThreshold: 3
+
+  customStartupProbe: {}
+
+  customLivenessProbe: {}
+
+  customReadinessProbe: {}
+
+  priorityClassName: ""
+
+  runtimeClassName: ""
+
+  schedulerName: ""
+
+  topologySpreadConstraints: []
+
+  hostAliases: []
+
+  tolerations: []
+
+  podLabels: {}
+
+  podAnnotations: {}
+
+  lifecycleHooks: {}
+
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+
+  extraArgs: []
+
+  extraEnvVars: []
+
+  extraEnvVarsCM: ""
+
+  extraEnvVarsSecret: ""
+
+  extraVolumes: []
+
+  extraVolumeMounts: []
+
+  initContainers: []
+
+  sidecars: []
+
+  serviceAccount:
+    create: true
+    name: cert-manager-webhook
+    annotations: {}
+    automountServiceAccountToken: true
+
+  hostNetwork: false
+
+  # EKS with Antrea
+  #hostNetwork: true
+  #securePort: 10260
+
+cainjector:
+  replicaCount: 1
+
+  image:
+    registry: docker.io
+    repository: bitnami/cainjector
+    tag: 1.11.0-debian-11-r22
+    digest: ""
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    debug: false
+
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+
+  podAffinityPreset: ""
+
+  podAntiAffinityPreset: soft
+
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+
+    values: []
+
+  affinity: {}
+
+  nodeSelector: {}
+
+  command: []
+
+  args: []
+
+  priorityClassName: ""
+
+  runtimeClassName: ""
+
+  schedulerName: ""
+
+  topologySpreadConstraints: []
+
+  hostAliases: []
+
+  tolerations: []
+
+  podLabels: {}
+
+  podAnnotations: {}
+
+  lifecycleHooks: {}
+
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate: {}
+
+  extraArgs: []
+
+  extraEnvVars: []
+
+  extraEnvVarsCM: ""
+
+  extraEnvVarsSecret: ""
+
+  extraVolumes: []
+
+  extraVolumeMounts: []
+
+  initContainers: []
+
+  sidecars: []
+
+  serviceAccount:
+    create: true
+    name: cert-manager-cainjector
+
+    annotations: {}
+
+    automountServiceAccountToken: true
+
+metrics:
+  enabled: true
+
+  podAnnotations:
+    prometheus.io/path: "/metrics"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "{{ .Values.controller.containerPort }}"
+
+  serviceMonitor:
+    path: /metrics
+    targetPort: 9402
+    enabled: false
+    namespace: ""
+    jobLabel: ""
+    interval: 60s
+    scrapeTimeout: 30s
+    relabelings: []
+    metricRelabelings: []
+    selector: {}
+    labels: {}
+    additionalLabels: {}
+    honorLabels: false
+
+rbac:
+  create: true

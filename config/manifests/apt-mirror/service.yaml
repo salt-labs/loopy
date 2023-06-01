@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apt-mirror-frontend
+  namespace: apt-mirror
+spec:
+  selector:
+    app.kubernetes.io/name: apt-mirror-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      name: http
+  type: ClusterIP

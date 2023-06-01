@@ -15,24 +15,22 @@ dependencies:
     - name: kind
       bin: kind
       url: https://github.com/kubernetes-sigs/kind/releases/download/v0.17.0/kind-linux-amd64
+    - name: cmctl
+      bin: cmctl
+      url: https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cmctl-linux-amd64.tar.gz
 
   manifests:
     - name: metallb
       url: https://raw.githubusercontent.com/metallb/metallb/v0.13.7/config/manifests/metallb-native.yaml
       dir: metallb
-    ## Ingress option A
+    - name: cert-manager
+      dir: cert-manager
     - name: contour
       dir: contour
-    ## Ingress option B
-    #- name: contour-gateway
-    #  url: https://projectcontour.io/quickstart/contour-gateway-provisioner.yaml
-    #  dir: contour-gateway
-    - name: test
-      dir: test
-    #- name: postgresql-ha
-    #  dir: postgresql-ha
-    #- name: nfs-server-provisioner
-    #  dir: nfs-server-provisioner
+    - name: nfs-server
+      dir: nfs-server
+    - name: postgresql-ha
+      dir: postgresql-ha
 
   helm:
     repositories:
@@ -46,52 +44,46 @@ dependencies:
         url: https://projects.registry.vmware.com/chartrepo/ako
 
     charts:
+      - name: cert-manager
+        repo: bitnami
+        values: values-kind.yaml
       - name: contour
         repo: bitnami
-        namespace: projectcontour
-        values: values-http.yaml
-      #- name: postgresql-ha
-      #  repo: bitnami
-      #- name: nfs-server-provisioner
-      #  repo: nfs-ganesha
+        values: values-kind.yaml
+      - name: nfs-server-provisioner
+        repo: nfs-ganesha
+        namespace: nfs-server
+        values: values-kind.yaml
+      - name: postgresql-ha
+        repo: bitnami
+        namespace: postgresql
+        values: values-kind.yaml
+
+  tests:
+    - command: echo "test"
+      stdout: "test"
+      stderr: ""
+    - command: kubectl get ns cert-manager
+      stdout: "cert-manager"
+      stderr: ""
 
 application:
   manifests:
-    #- name: ca
-    #  dir: certificate-authority
-    - name: bamboo
-      dir: bamboo
-    - name: bamboo-agent
-      dir: bamboo-agent
-    - name: bitbucket
-      dir: bitbucket
-    - name: confluence
-      dir: confluence
-    - name: crowd
-      dir: crowd
-    - name: jira
-      dir: jira
+    - name: cert-authority
+      dir: cert-authority
+    - name: test
+      dir: test
 
   helm:
     repositories:
-      - name: atlassian
-        url: https://atlassian.github.io/data-center-helm-charts
-
     charts:
-      - name: bamboo
-        repo: atlassian
-        values: values-http.yaml
-      #- name: bamboo-agent
-      #  repo: atlassian
-      - name: bitbucket
-        repo: atlassian
-        values: values-http.yaml
-      - name: confluence
-        repo: atlassian
-        values: values-http.yaml
-      - name: crowd
-        repo: atlassian
-        values: values-http.yaml
-      - name: jira
-        repo: atlassian
-        values: values-http.yaml
+
+  tests:
+    - command: echo "test"
+      stdout: "test"
+      stderr: ""
+      status: 0
+    - command: kubectl get ns cert-manager
+      stdout: "cert-manager"
+      stderr: ""
+      status: 0

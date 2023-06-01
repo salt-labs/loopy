@@ -62,6 +62,15 @@ metadata:
   name: test
   namespace: test
   annotations:
+    kubernetes.io/tls-acme: "false"
+    cert-manager.io/cluster-issuer: cert-authority
+    cert-manager.io/duration: 1hr # Test renewal
+    cert-manager.io/usages: "server auth"
+    cert-manager.io/revision-history-limit: "1"
+    cert-manager.io/private-key-algorithm: "Ed25519"
+    cert-manager.io/private-key-encoding: "PCKS1"
+    cert-manager.io/private-key-size: "4096"
+    cert-manager.io/private-key-rotation-policy: "Never" # Test rotation (Never -> Always)
 spec:
   ingressClassName: contour
   rules:

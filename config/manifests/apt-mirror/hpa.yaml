@@ -1,0 +1,16 @@
+---
+
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: apt-mirror
+  namespace: apt-mirror
+spec:
+  minReplicas: 3
+  maxReplicas: 9
+  targetCPUUtilizationPercentage: 75
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: apt-mirror
+

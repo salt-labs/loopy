@@ -59,46 +59,77 @@ jobs:
     outputs:
       conclusion: ${{ steps.wait_for_linter.outputs.conclusion }}
 
-  wait_rust:
-    name: Wait for Rust
+  wait_build:
+    name: Wait for Build
 
     runs-on: ${{ matrix.os }}
 
     timeout-minutes: 60
 
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            toolchain: stable
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             toolchain: stable
           - target: x86_64-unknown-linux-musl
             os: ubuntu-latest
             toolchain: stable
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            toolchain: stable
-          #- target: x86_64-pc-windows-msvc
-          #  os: windows-latest
-          #  toolchain: stable
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             toolchain: stable
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            toolchain: stable
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            toolchain: stable
 
     steps:
-      - id: wait_for_rust
-        name: Wait for Rust (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
+      - id: wait_for_build
+        name: Wait for Build (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
         uses: fountainhead/action-wait-for-check@v1.1.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          checkName: Cargo Check (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
+          checkName: Build (${{ matrix.target }}, ${{ matrix.os }}, ${{ matrix.toolchain }})
           timeoutSeconds: 1800
           intervalSeconds: 30
 
-    outputs:
-      conclusion: ${{ steps.wait_for_rust.outputs.conclusion }}
+      - id: matrix_conclusion
+        name: Store Matrix conclusions
+        shell: bash
+        run: |
+          CONCLUSION="${{ steps.wait_for_build.outputs.conclusion }}"
+          echo "Conclusion: ${CONCLUSION}"
+
+          CONCLUSIONS_JSON=${CONCLUSIONS_JSON:-"{}"}
+          echo "Conclusions JSON: ${CONCLUSIONS_JSON}"
+
+          CONCLUSIONS_JSON=$(echo "${CONCLUSIONS_JSON}" | \
+          jq -c \
+            --arg TARGET "${{ matrix.target }}" \
+            --arg CONCLUSION "${{ steps.wait_for_build.outputs.conclusion }}" \
+            '. + {($TARGET): $CONCLUSION}')
+
+          echo "Conclusions JSON: ${CONCLUSIONS_JSON}"
+          echo "CONCLUSIONS_JSON=${CONCLUSIONS_JSON}" >> "${GITHUB_OUTPUT}"
+          mkdir artifacts
+          echo "${CONCLUSIONS_JSON}" >> "artifacts/${{ matrix.target }}-conclusions.json"
+
+      - id: upload_artifacts
+        name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: conclusions
+          path: artifacts
 
   comment:
     name: Thumbs
@@ -109,7 +140,7 @@ jobs:
 
     needs:
       - wait_linter
-      - wait_rust
+      - wait_build
 
     strategy:
       fail-fast: true
@@ -118,9 +149,37 @@ jobs:
           - ubuntu-latest
 
     steps:
+      - id: download_artifacts
+        name: Download Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: conclusions
+          path: conclusions
+
+      - id: thumbs
+        name: Determine Thumbs Up/Down
+        run: |
+          sudo apt-get install -y jq tree
+          tree conclusions
+          THUMBS="UP"
+          for FILE in conclusions/*.json;
+          do
+            TARGET=$(jq -r 'to_entries[] | select(.value) | .key' "$FILE")
+            CONCLUSION=$(jq -r 'to_entries[] | select(.value != "success") | .value' "$FILE")
+            echo "Target: $TARGET"
+            echo "Conclusion: $CONCLUSION"
+            if [[ -n $CONCLUSION ]];
+            then
+              THUMBS="DOWN"
+              break
+            fi
+          done
+          echo "THUMBS=$THUMBS" >> "${GITHUB_OUTPUT}"
+          echo "Thumbs: $THUMBS"
+
       - id: pr_comment_thumbs_up
         name: PR Comment (Thumbs Up)
-        if: ${{ needs.wait_linter.outputs.conclusion == 'success' && needs.wait_rust.outputs.conclusion == 'success' }}
+        if: ${{ steps.thumbs.outputs.THUMBS == 'UP' }}
         uses: exercism/pr-commenter-action@v1.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -134,7 +193,7 @@ jobs:
 
       - id: pr_comment_thumbs_down
         name: PR Comment (Thumbs Down)
-        if: ${{ needs.wait_linter.outputs.conclusion != 'success' || needs.wait_rust.outputs.conclusion != 'success' }}
+        if: ${{ steps.thumbs.outputs.THUMBS == 'DOWN' }}
         uses: exercism/pr-commenter-action@v1.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

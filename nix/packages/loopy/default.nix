@@ -6,40 +6,69 @@
 }:
 rustPlatform.buildRustPackage {
   pname = "loopy";
-  version = "0.1.0";
+  version = "0.2.0-beta.0";
 
   src = ./../../../.;
 
-  cargoLock.lockFile = ./../../../Cargo.lock;
+  #cargoRoot = ./..;
 
-  preBuild = "export TMPDIR=$(mktemp -d)";
+  cargoLock = {
+    lockFile = ./../../../Cargo.lock;
+  };
 
+  cargoDeps = rustPlatform.importCargoLock {
+    lockFile = ./../../../Cargo.lock;
+  };
+
+  preBuild = ''
+    echo "Running preBuild"
+
+    export TMPDIR="$(mktemp -d)"
+
+    cp ${./../../../Cargo.lock} Cargo.lock
+  '';
+
+  # buildPlatform
   nativeBuildInputs = with pkgs; [
-    rustc
     cargo
-    pkg-config
-    cmake
+    rustc
 
+    binutils
     bzip2
+    clang
+    cmake
     figlet
     file
+    gcc
     gnutar
+    lld
+    glibc
     openssl
+    perl
+    pkg-config
+    pkgconf
     xxd
     zlib
     zstd
+    xz
   ];
 
+  # hostPlatform
   buildInputs = with pkgs; [
     bzip2
     figlet
     file
     gnutar
     openssl
-    xxd
     zlib
     zstd
   ];
+
+  postPatch = ''
+    echo "Running postPatch"
+
+    cp ${./../../../Cargo.lock} Cargo.lock
+  '';
 
   doCheck = false;
 

@@ -69,7 +69,7 @@ jobs:
         run: |
           wget --output-document yj https://github.com/sclevine/yj/releases/latest/download/yj-linux-amd64
           chmod +x yj
-          VERSION="$(yj -tj < Cargo.toml | jq -r .package.version)"
+          VERSION="$(./yj -tj < Cargo.toml | jq -r .package.version)"
           echo "VERSION=${VERSION}" >> "${GITHUB_OUTPUT}"
           echo "Package version: ${VERSION}"
 

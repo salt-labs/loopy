@@ -13,8 +13,11 @@ on:
     types:
       - completed
 
+  # TODO: DISABLE
+  workflow_dispatch:
+
 permissions:
-  contents: read
+  contents: write
 
 env:
   ORGANISATION: ${{ github.repository_owner }}
@@ -23,9 +26,6 @@ env:
   # Works on pushes or PRs
   BRANCH_NAME_CURRENT: ${{ github.head_ref || github.ref_name }}
   BRANCH_NAME_DEFAULT: ${{ github.event.repository.default_branch }}
-
-  CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
 
 defaults:
   run:
@@ -42,12 +42,15 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     timeout-minutes: 30
+    continue-on-error: false
 
     strategy:
       fail-fast: true
       matrix:
         os:
           - ubuntu-latest
+
+    if: ${{ github.ref_name == github.event.repository.default_branch }}
 
     steps:
       - id: checkout_repository
@@ -68,8 +71,8 @@ jobs:
           echo "VERSION=${VERSION}" >> "${GITHUB_OUTPUT}"
           echo "Package version: ${VERSION}"
 
-      - id: check_tags
-        name: Check git tags
+      - id: check_tag
+        name: Check git tag
         env:
           TAG: ${{ steps.cargo_version.outputs.VERSION }}
         run: |
@@ -82,6 +85,18 @@ jobs:
             echo "The Release tag ${TAG} does not exist."
             echo "CREATE_TAG=true" >> "${GITHUB_OUTPUT}"
           fi
+          # Export the tag for use in the next step as an output.
+          echo "RELEASE_VERSION=${TAG}" >> "${GITHUB_OUTPUT}"
+
+      - id: create_tag
+        name: Create git tag
+        uses: rickstaa/action-create-tag@v1
+        if: ${{ steps.check_tag.outputs.CREATE_TAG == 'true' }}
+        with:
+          tag: ${{ steps.check_tag.outputs.RELEASE_VERSION }}
+          message: Release ${{ steps.cargo_version.outputs.VERSION }}
+          force_push_tag: false
+          tag_exists_error: true
 
       - id: fetch_artifact
         name: Fetch all build artifacts
@@ -95,9 +110,10 @@ jobs:
           github.event_name == 'push' &&
           github.ref == 'refs/heads/${{ env.BRANCH_NAME_DEFAULT}}' &&
           github.event.workflow_run.conclusion == 'success' &&
-          steps.check_tags.outputs.CREATE_TAG == 'true'
+          steps.check_tag.outputs.CREATE_TAG == 'true'
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ steps.cargo_version.outputs.VERSION }}
           prerelease: false
           generate_release_notes: true
           name: ${{ env.PROJECT }} v${{ steps.cargo_version.outputs.VERSION }}
@@ -122,6 +138,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     timeout-minutes: 30
+    continue-on-error: false
 
     strategy:
       fail-fast: true
